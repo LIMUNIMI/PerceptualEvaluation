@@ -39,12 +39,12 @@ def farthest_points(samples, k, optimize=False):
 
     out = np.empty(k, dtype=np.int64)
     for i in range(k):
-        kth_cluster = clusters[clusters == k]
-        others = clusters[clusters != k]
+        kth_cluster = samples[clusters == i + 1]
+        others = samples[clusters != i + 1]
 
         others_centroid = np.mean(others, axis=0)
 
-        out[i] = np.argmax(np.abs(kth_cluster - others_centroid))
+        out[i] = np.argmax(np.mean(np.abs(kth_cluster - others_centroid), axis=1))
 
     return out
 

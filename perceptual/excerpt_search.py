@@ -1,14 +1,19 @@
+import itertools
 import numpy as np
 import essentia.standard as es
 from .utils import farthest_points, midi_pitch_to_f0
-# TODO: add asmd and change this
-from .asmd.audioscoredataset import Dataset
+# from joblib import Parallel, delayed
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from asmd.audioscoredataset import Dataset
 
 RES = 0.01
 SR = 22050
 DURATION = 10  # in seconds
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
+NJOBS = -1
+K = 5
 
 
 def main():
@@ -17,19 +22,25 @@ def main():
         instruments=['piano'],
         datasets=['vienna_corpus'])
 
-    samples = []
-    for i in range(len(dataset)):
-        score = dataset.get_pianoroll(
-            i, score_type=['precise_alignment', 'broad_alignment'],
-            resolution=RES)
-        audio, sr = dataset.get_audio(i)
-
-        resampler = es.Resample(inputSampleRate=sr, outputSampleRate=SR)
-        audio = resampler(audio)
-        samples += get_win_features(score, audio)
+    samples = dataset.parallel(process_song, n_jobs=NJOBS)
+    samples = np.array(list(itertools.chain(*samples)))
+    samples = StandardScaler(copy=False).fit_transform(samples)
+    samples = PCA(n_components=10, copy=False).fit_transform(samples)
+    return farthest_points(samples, K)
 
 
-def get_win_features(score, audio):
+def process_song(i, dataset):
+    score = dataset.get_pianoroll(
+        i, score_type=['precise_alignment', 'broad_alignment'],
+        resolution=RES)
+    audio, sr = dataset.get_audio(i)
+
+    resampler = es.Resample(inputSampleRate=sr, outputSampleRate=SR)
+    audio = resampler(audio)
+    return get_song_win_features(score, audio)
+
+
+def get_song_win_features(score, audio):
 
     # looking for start and end in midi
     for i in range(score.shape[1]):
@@ -56,7 +67,11 @@ def get_win_features(score, audio):
 
 
 def audio_features(audio_win):
-    return []
+    spectrum = es.Spectrum(size=audio_win.shape[0])(audio_win)
+    _bands, mfcc = es.MFCC(inputSize=spectrum.shape[0])(spectrum)
+
+    rhythm = es.RhythmDescriptors()(audio_win)
+    return mfcc.tolist() + [rhythm[2]] + list(rhythm[5:11])
 
 
 def score_features(score_win):
