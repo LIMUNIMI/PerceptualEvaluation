@@ -1,7 +1,10 @@
 import numpy as np
 from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
+from scipy.cluster.vq import kmeans2
+import essentia.standard as es
 
+PLOT = False
 
 def farthest_points(samples, k, optimize=False):
     """
@@ -44,7 +47,24 @@ def farthest_points(samples, k, optimize=False):
 
         others_centroid = np.mean(others, axis=0)
 
-        out[i] = np.argmax(np.mean(np.abs(kth_cluster - others_centroid), axis=1))
+        kth_cluster_point = np.argmax(
+            np.mean(np.abs(kth_cluster - others_centroid), axis=1))
+        kth_cluster_indices = np.where(clusters == i + 1)[0]
+
+        out[i] = kth_cluster_indices[kth_cluster_point]
+
+    if PLOT:
+        from scipy.spatial.distance import pdist, squareform
+        import visdom
+        vis = visdom.Visdom()
+        mat = squareform(pdist(samples))
+        m = np.argsort(np.sum(mat, axis=1))[-k:]
+        vis.heatmap(mat)
+        win = vis.scatter(X=samples, Y=clusters, opts={"markersize": 5})
+        vis.scatter(X=samples[out], update="append", name="chosen", win=win, opts={
+            "markersymbol": "cross-open", "markersize": 10})
+        vis.scatter(X=samples[m], update="append", name="selfsim", win=win, opts={
+            "markersymbol": "square", "markersize": 10})
 
     return out
 
@@ -54,3 +74,53 @@ def midi_pitch_to_f0(midi_pitch):
     Return a frequency given a midi pitch
     """
     return 440 * 2**((midi_pitch-69)/12)
+
+
+def find_start_stop(audio, sample_rate=44100, seconds=False):
+    """
+    Returns a tuple containing the start and the end of sound in an audio array.
+
+    ARGUMENTS:
+    `audio` : essentia.array
+        an essentia array or numpy array containing the audio
+    `sample_rate` : int
+        sample rate
+    `seconds` : boolean
+        if True, results will be expressed in seconds (float)
+
+    RETURNS:
+    `start` : int or float
+        the sample where sound starts or the corresponding second
+
+    `end` : int or float
+        the sample where sound ends or the corresponding second
+    """
+    processer = es.StartStopSilence(threshold=-60)
+    for frame in es.FrameGenerator(audio, frameSize=1024, hopSize=256,
+                                   startFromZero=True):
+        start, stop = processer(frame)
+
+    if seconds:
+        start = specframe2sec(start, sample_rate, 256, 1024)
+        stop = specframe2sec(stop, sample_rate, 256, 1024)
+    else:
+        start = int(specframe2sample(start, 256, 1024))
+        stop = int(specframe2sample(stop, 256, 1024))
+
+    return start, stop
+
+
+def specframe2sec(frame, sample_rate=44100, hop_size=3072, win_len=4096):
+    """
+    Takes frame index (int) and returns the corresponding central time (sec)
+    """
+
+    return specframe2sample(frame, hop_size, win_len) / sample_rate
+
+
+def specframe2sample(frame, hop_size=3072, win_len=4096):
+    """
+    Takes frame index (int) and returns the corresponding central time (sec)
+    """
+
+    return frame*hop_size + win_len / 2

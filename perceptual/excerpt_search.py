@@ -1,7 +1,6 @@
-import itertools
 import numpy as np
 import essentia.standard as es
-from .utils import farthest_points, midi_pitch_to_f0
+from .utils import farthest_points, find_start_stop
 # from joblib import Parallel, delayed
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -13,7 +12,7 @@ DURATION = 10  # in seconds
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
 NJOBS = -1
-K = 5
+K = 6
 
 
 def main():
@@ -22,11 +21,25 @@ def main():
         instruments=['piano'],
         datasets=['vienna_corpus'])
 
-    samples = dataset.parallel(process_song, n_jobs=NJOBS)
-    samples = np.array(list(itertools.chain(*samples)))
+    parallel_out = dataset.parallel(process_song, n_jobs=NJOBS)
+    songs = []
+    wins = []
+    samples = []
+    positions = []
+    for i in range(len(parallel_out)):
+        samples += parallel_out[i][0]
+        positions += parallel_out[i][1]
+        wins += list(range(len(parallel_out[i][0])))
+        songs += [i]*len(parallel_out[i][0])
+
+    samples = np.array(samples)
     samples = StandardScaler(copy=False).fit_transform(samples)
-    samples = PCA(n_components=10, copy=False).fit_transform(samples)
-    return farthest_points(samples, K)
+    samples = PCA(n_components=15, copy=False).fit_transform(samples)
+    points = farthest_points(samples, K)
+    print("\nChosen songs:")
+    for point in points:
+        path = dataset.paths[songs[point]][0]
+        print(f"Song {path}, seconds {positions[point]}")
 
 
 def process_song(i, dataset):
@@ -35,13 +48,14 @@ def process_song(i, dataset):
         resolution=RES)
     audio, sr = dataset.get_audio(i)
 
-    resampler = es.Resample(inputSampleRate=sr, outputSampleRate=SR)
-    audio = resampler(audio)
+    audio = es.Resample(inputSampleRate=sr, outputSampleRate=SR)(audio)
     return get_song_win_features(score, audio)
 
 
 def get_song_win_features(score, audio):
 
+    start, stop = find_start_stop(audio, sample_rate=SR)
+    audio = audio[start:stop]
     # looking for start and end in midi
     for i in range(score.shape[1]):
         if np.any(score[:, i]):
@@ -56,14 +70,17 @@ def get_song_win_features(score, audio):
     audio = audio[:int(i*RES*SR)+1]
 
     num_win = (len(audio) / SR) / DURATION
+    dur_win = audio_win_len / SR
     features = []
+    times = []
     for i in range(int(num_win)):
         audio_win = audio[i*audio_win_len:(i+1)*audio_win_len]
         score_win = score[:, i*score_win_len:(i+1)*score_win_len]
         features.append(
             score_features(score_win) + audio_features(audio_win)
         )
-    return features
+        times.append((start/SR + dur_win*i, start/SR + dur_win*(i+1)))
+    return features, times
 
 
 def audio_features(audio_win):
