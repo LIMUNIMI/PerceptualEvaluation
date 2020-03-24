@@ -1,18 +1,20 @@
 import numpy as np
 import essentia.standard as es
 from .utils import farthest_points, find_start_stop
-# from joblib import Parallel, delayed
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from asmd.audioscoredataset import Dataset
 
-RES = 0.01
+HOP = 0.05
+RES = 0.005
 SR = 22050
 DURATION = 10  # in seconds
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
+hop_audio = int(audio_win_len * HOP)
+hop_score = int(score_win_len * HOP)
 NJOBS = -1
-K = 6
+K = 4
 
 
 def main():
@@ -20,6 +22,8 @@ def main():
     dataset.filter(
         instruments=['piano'],
         datasets=['vienna_corpus'])
+
+    print("\nAnalysing:")
 
     parallel_out = dataset.parallel(process_song, n_jobs=NJOBS)
     songs = []
@@ -41,6 +45,8 @@ def main():
         path = dataset.paths[songs[point]][0]
         print(f"Song {path}, seconds {positions[point]}")
 
+    print(f"Total number of samples: {samples.shape[0]}")
+
 
 def process_song(i, dataset):
     score = dataset.get_pianoroll(
@@ -54,32 +60,35 @@ def process_song(i, dataset):
 
 def get_song_win_features(score, audio):
 
+    # looking for start and end in audio
     start, stop = find_start_stop(audio, sample_rate=SR)
     audio = audio[start:stop]
+
     # looking for start and end in midi
     for i in range(score.shape[1]):
         if np.any(score[:, i]):
             break
     score = score[:, i:]
-    audio = audio[int(i*RES*SR):]
 
     for i in reversed(range(score.shape[1])):
         if np.any(score[:, i]):
             break
     score = score[:, :i+1]
-    audio = audio[:int(i*RES*SR)+1]
 
-    num_win = (len(audio) / SR) / DURATION
+    num_win = (len(audio) - audio_win_len) / hop_audio
+    num_win = min(num_win, (score.shape[1] - score_win_len) / hop_score)
     dur_win = audio_win_len / SR
+    dur_hop = hop_audio / SR
     features = []
     times = []
     for i in range(int(num_win)):
-        audio_win = audio[i*audio_win_len:(i+1)*audio_win_len]
-        score_win = score[:, i*score_win_len:(i+1)*score_win_len]
+        audio_win = audio[i*hop_audio:i*hop_audio+audio_win_len]
+        score_win = score[:, i*hop_score:i*hop_score+score_win_len]
         features.append(
             score_features(score_win) + audio_features(audio_win)
         )
-        times.append((start/SR + dur_win*i, start/SR + dur_win*(i+1)))
+        times.append((start/SR + dur_hop*i, start/SR + dur_hop*i+dur_win))
+
     return features, times
 
 
