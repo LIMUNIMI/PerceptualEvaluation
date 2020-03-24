@@ -1,0 +1,23 @@
+~/phd/perceptual                                                                                          
+federico@amadeus - 20:12:13$ poetry run python -m perceptual.excerpt_search                               
+[   INFO   ] MusicExtractorSVM: no classifier models were configured by default                           
+Opening /home/federico/phd/asmd/asmd/definitions/PHENICX.json                                             
+Opening /home/federico/phd/asmd/asmd/definitions/Bach10.json                                              
+Opening /home/federico/phd/asmd/asmd/definitions/traditional_flute.json                                   
+Opening /home/federico/phd/asmd/asmd/definitions/SMD.json                                                 
+Opening /home/federico/phd/asmd/asmd/definitions/MusicNet.json                                            
+Opening /home/federico/phd/asmd/asmd/definitions/vienna_corpus.json                                       
+Opening /home/federico/phd/asmd/asmd/definitions/Maestro.json                                             
+Opening /home/federico/phd/asmd/asmd/definitions/TRIOS_dataset.json                                       
+                                                                                                          
+Analysing:                                                                                                
+100%|█████████████████████████████████████████████████████████████████████| 88/88 [00:17<00:00,  4.89it/s]
+                                                                                                          
+Chosen songs:                                                                                             
+Song ['vienna_corpus/Chopin_op10_no3_p01.wav'], seconds 60.00 - 70.00 ...... 64.99 - 74.99                
+Song ['vienna_corpus/Mozart_K331_1st-mov_p13.wav'], seconds 65.17 - 75.17 ...... 67.89 - 77.89            
+Song ['vienna_corpus/Schubert_D783_no15_p17.wav'], seconds 0.12 - 10.12 ...... 2.52 - 12.52               
+Song ['vienna_corpus/Mozart_K331_1st-mov_p17.wav'], seconds 100.20 - 110.20 ...... 107.64 - 117.64        
+Song ['vienna_corpus/Chopin_op38_p09.wav'], seconds 35.00 - 45.00 ...... 38.10 - 48.10                    
+Song ['vienna_corpus/Chopin_op38_p14.wav'], seconds 135.00 - 145.00 ...... 137.90 - 147.90                
+Total number of samples: 1348                                                                             

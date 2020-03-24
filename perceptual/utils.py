@@ -1,10 +1,10 @@
 import numpy as np
 from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
-from scipy.cluster.vq import kmeans2
 import essentia.standard as es
 
 PLOT = False
+
 
 def farthest_points(samples, k, optimize=False):
     """
@@ -96,16 +96,19 @@ def find_start_stop(audio, sample_rate=44100, seconds=False):
         the sample where sound ends or the corresponding second
     """
     processer = es.StartStopSilence(threshold=-60)
-    for frame in es.FrameGenerator(audio, frameSize=1024, hopSize=256,
+    for frame in es.FrameGenerator(audio, frameSize=512, hopSize=128,
                                    startFromZero=True):
         start, stop = processer(frame)
 
     if seconds:
-        start = specframe2sec(start, sample_rate, 256, 1024)
-        stop = specframe2sec(stop, sample_rate, 256, 1024)
+        start = specframe2sec(start, sample_rate, 128, 512)
+        stop = specframe2sec(stop, sample_rate, 128, 512)
     else:
-        start = int(specframe2sample(start, 256, 1024))
-        stop = int(specframe2sample(stop, 256, 1024))
+        start = int(specframe2sample(start, 128, 512))
+        stop = int(specframe2sample(stop, 128, 512))
+
+    if start == 256:
+        start = 0
 
     return start, stop
 

@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from asmd.audioscoredataset import Dataset
 
-HOP = 0.05
+HOP = 0.5
 RES = 0.005
 SR = 22050
 DURATION = 10  # in seconds
@@ -14,7 +14,7 @@ score_win_len = int(DURATION / RES)
 hop_audio = int(audio_win_len * HOP)
 hop_score = int(score_win_len * HOP)
 NJOBS = -1
-K = 4
+K = 6
 
 
 def main():
@@ -37,13 +37,15 @@ def main():
         songs += [i]*len(parallel_out[i][0])
 
     samples = np.array(samples)
-    samples = StandardScaler(copy=False).fit_transform(samples)
-    samples = PCA(n_components=15, copy=False).fit_transform(samples)
+    samples = StandardScaler().fit_transform(samples)
+    samples = PCA(n_components=15).fit_transform(samples)
     points = farthest_points(samples, K)
     print("\nChosen songs:")
     for point in points:
         path = dataset.paths[songs[point]][0]
-        print(f"Song {path}, seconds {positions[point]}")
+        time = positions[point]
+        print(f"Song {path}, seconds {time[0][0]:.2f} - {time[0][1]:.2f} \
+...... {time[1][0]:.2f} - {time[1][1]:.2f}")
 
     print(f"Total number of samples: {samples.shape[0]}")
 
@@ -61,13 +63,14 @@ def process_song(i, dataset):
 def get_song_win_features(score, audio):
 
     # looking for start and end in audio
-    start, stop = find_start_stop(audio, sample_rate=SR)
+    start, stop = find_start_stop(audio, sample_rate=SR,)
     audio = audio[start:stop]
 
     # looking for start and end in midi
     for i in range(score.shape[1]):
         if np.any(score[:, i]):
             break
+    score_start = i
     score = score[:, i:]
 
     for i in reversed(range(score.shape[1])):
@@ -87,14 +90,18 @@ def get_song_win_features(score, audio):
         features.append(
             score_features(score_win) + audio_features(audio_win)
         )
-        times.append((start/SR + dur_hop*i, start/SR + dur_hop*i+dur_win))
+        times.append((
+            (start/SR + dur_hop*i, start/SR + dur_hop*i+dur_win),
+            (score_start*RES + i*hop_score*RES, score_start*RES + i*hop_score*RES+score_win_len*RES)
+        ))
 
     return features, times
 
 
 def audio_features(audio_win):
     spectrum = es.Spectrum(size=audio_win.shape[0])(audio_win)
-    _bands, mfcc = es.MFCC(inputSize=spectrum.shape[0])(spectrum)
+    _bands, mfcc = es.MFCC(
+        inputSize=spectrum.shape[0], sampleRate=SR)(spectrum)
 
     rhythm = es.RhythmDescriptors()(audio_win)
     return mfcc.tolist() + [rhythm[2]] + list(rhythm[5:11])
