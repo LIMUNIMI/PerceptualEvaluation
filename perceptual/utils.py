@@ -6,30 +6,38 @@ import essentia.standard as es
 PLOT = False
 
 
-def farthest_points(samples, k, optimize=False):
+def farthest_points(samples, k, n, optimize=False):
     """
-    Returns a list of `k` indices referred to the `k` rows in `samples` whcih
-    are farthest from each other, computed using wang-linkage and picking the
-    point from each cluster which is the most distant one from the other
-    clusters.
+    Computes `n` sets of `k` indices of farthest points.
+
+    First, it clusterizes `samples` with ward-linkage to find `k` clusters.
+    Then, for each cluster, it looks for the `n` points which have the largest
+    distance from the centroid of all the other points. The order of the `n`
+    points in each cluster is randomized. This method ensure that each of the
+    `n` sets contains one point in each cluster.
 
     Arguments
-    ---
+    ---------
+
     `samples` : np.ndarray
         the set of samples with dimensions (N, D), where N is the number of
         samples and D is the number of features for each sample
 
     `k` : int
-        the number of points to find
+        the number of clusters to find
+
+    `n` : int
+        the number of points per cluster to find
 
     `optimize` : bool
         if using optimized algorithm which takes O(ND) instead of O(N^2).
 
     Returns
-    ---
+    -------
 
     np.ndarray
         array of `np.int64` representing the indices of the farthest samples
+        shape: (k, n)
     """
     assert samples.shape[0] > k, "samples cardinality < k"
 
@@ -40,18 +48,24 @@ def farthest_points(samples, k, optimize=False):
     Z = linkage_func(samples, method='ward')
     clusters = fcluster(Z, k, criterion='maxclust')
 
-    out = np.empty(k, dtype=np.int64)
+    out = np.empty((k, n), dtype=np.int64)
     for i in range(k):
         kth_cluster = samples[clusters == i + 1]
-        others = samples[clusters != i + 1]
-
-        others_centroid = np.mean(others, axis=0)
-
-        kth_cluster_point = np.argmax(
-            np.mean(np.abs(kth_cluster - others_centroid), axis=1))
         kth_cluster_indices = np.where(clusters == i + 1)[0]
+        others_centroid = np.empty_like(kth_cluster)
 
-        out[i] = kth_cluster_indices[kth_cluster_point]
+        for l, j in enumerate(kth_cluster_indices):
+            others = np.concatenate((samples[:j], samples[j+1:]))
+            others_centroid[l] = np.mean(others, axis=0)
+
+        # np.partition returns an array with the `-n`-th element in the
+        # position it would be if sorted and all larger value after it (not
+        # sorted, though
+        kth_cluster_points = np.argpartition(
+            np.mean(np.abs(kth_cluster - others_centroid), axis=1), -n)[-n:]
+
+        out[i] = kth_cluster_indices[kth_cluster_points]
+    np.random.shuffle(out.T)
 
     if PLOT:
         from scipy.spatial.distance import pdist, squareform
@@ -61,10 +75,18 @@ def farthest_points(samples, k, optimize=False):
         m = np.argsort(np.sum(mat, axis=1))[-k:]
         vis.heatmap(mat)
         win = vis.scatter(X=samples, Y=clusters, opts={"markersize": 5})
-        vis.scatter(X=samples[out], update="append", name="chosen", win=win, opts={
-            "markersymbol": "cross-open", "markersize": 10})
-        vis.scatter(X=samples[m], update="append", name="selfsim", win=win, opts={
-            "markersymbol": "square", "markersize": 10})
+        vis.scatter(
+            X=samples[out[:, 0]],
+            update="append",
+            name="chosen",
+            win=win,
+            opts={"markersymbol": "cross-open", "markersize": 10})
+        vis.scatter(
+            X=samples[m],
+            update="append",
+            name="selfsim",
+            win=win,
+            opts={"markersymbol": "square", "markersize": 10})
 
     return out
 

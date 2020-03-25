@@ -5,16 +5,25 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from asmd.audioscoredataset import Dataset
 
-HOP = 0.5
+#: duration of each pianoroll column in seconds
 RES = 0.005
+#: sample rate for processing
 SR = 22050
-DURATION = 10  # in seconds
+#: duration of excerpts in seconds
+DURATION = 20
+#: percentage of hop-size for excerpt search
+HOP = 0.25
+#: number of parallele processes
+NJOBS = -1
+#: the number of excerpts per each question
+NUM_EXCERPTS = 6
+#: the number of questions
+QUESTIONS = 2
+
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
 hop_audio = int(audio_win_len * HOP)
 hop_score = int(score_win_len * HOP)
-NJOBS = -1
-K = 6
 
 
 def main():
@@ -39,13 +48,15 @@ def main():
     samples = np.array(samples)
     samples = StandardScaler().fit_transform(samples)
     samples = PCA(n_components=15).fit_transform(samples)
-    points = farthest_points(samples, K)
+    points = farthest_points(samples, NUM_EXCERPTS, QUESTIONS)
     print("\nChosen songs:")
-    for point in points:
-        path = dataset.paths[songs[point]][0]
-        time = positions[point]
-        print(f"Song {path}, seconds {time[0][0]:.2f} - {time[0][1]:.2f} \
-...... {time[1][0]:.2f} - {time[1][1]:.2f}")
+    for question in range(QUESTIONS):
+        print(f"\nQuestion {question+1}:")
+        for point in points[:, question]:
+            path = dataset.paths[songs[point]][0]
+            time = positions[point]
+            print(f"Song {path}, seconds {time[0][0]:.2f} - {time[0][1]:.2f} \
+    ...... {time[1][0]:.2f} - {time[1][1]:.2f}")
 
     print(f"Total number of samples: {samples.shape[0]}")
 
