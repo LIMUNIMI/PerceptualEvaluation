@@ -6,14 +6,15 @@ authors = ["Federico Simonetta"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.6.9"
 essentia = "^2.1b6.dev184"
 fastcluster = "^1.1.26"
 scipy = "^1.4.1"
 joblib = "^0.14.1"
 # asmd = "^0.1.1"
-
 pretty_midi = "^0.2.8"
+magenta = "^1.2.2"
+
 [tool.poetry.dev-dependencies]
 ipython = "*"
 ipdb = "*"
