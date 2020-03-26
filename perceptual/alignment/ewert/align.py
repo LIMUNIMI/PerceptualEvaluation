@@ -1,19 +1,19 @@
 import numpy as np
-# import matplotlib
-# import matplotlib.pyplot as plt
-# import matplotlib.patches as patches
-# from matplotlib.patches import ConnectionPatch
-
 from utils.utils import take_closest_sorted
 import pretty_midi
 from math import floor, log2
 import librosa
 import librosa.display
 from .dlnco.DLNCO import dlnco
-from .parser.txt_parser import sv_score_parser
-from operator import itemgetter
 
-def multiple_audio_alignment(audio1, sr1, audio2, sr2, hopsize, n_fft=4096, merge_dlnco=True):
+
+def multiple_audio_alignment(audio1,
+                             sr1,
+                             audio2,
+                             sr2,
+                             hopsize,
+                             n_fft=4096,
+                             merge_dlnco=True):
     """
     Aligns two audio files and returns a list of lists containing the map
     between the audio frames.
@@ -47,22 +47,39 @@ def multiple_audio_alignment(audio1, sr1, audio2, sr2, hopsize, n_fft=4096, merg
 
     # chroma and DLNCO features
     # print("Computing features")
-    audio1_chroma = librosa.feature.chroma_stft(y=audio1, sr=sr1, tuning=0, norm=2,
-                                                hop_length=hopsize, n_fft=n_fft)
+    audio1_chroma = librosa.feature.chroma_stft(y=audio1,
+                                                sr=sr1,
+                                                tuning=0,
+                                                norm=2,
+                                                hop_length=hopsize,
+                                                n_fft=n_fft)
     audio1_dlnco = dlnco(audio1, sr1, n_fft, hopsize)
 
-    audio2_chroma = librosa.feature.chroma_stft(y=audio2, sr=sr2, tuning=0, norm=2,
-                                                hop_length=hopsize, n_fft=n_fft)
+    audio2_chroma = librosa.feature.chroma_stft(y=audio2,
+                                                sr=sr2,
+                                                tuning=0,
+                                                norm=2,
+                                                hop_length=hopsize,
+                                                n_fft=n_fft)
     audio2_dlnco = dlnco(audio2, sr2, n_fft, hopsize)
 
     audio1_merge = audio1_chroma + audio1_dlnco if merge_dlnco else audio1_chroma
     audio2_merge = audio2_chroma + audio2_dlnco if merge_dlnco else audio2_chroma
 
     # print("Starting DTW")
-    D, wp = librosa.sequence.dtw(X=audio1_merge, Y=audio2_merge, metric='cosine') # D (153, 307)
+    D, wp = librosa.sequence.dtw(X=audio1_merge,
+                                 Y=audio2_merge,
+                                 metric='cosine')  # D (153, 307)
     return wp
 
-def audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft=4096, merge_dlnco=True, sf2_path=None):
+
+def audio_to_midi_alignment(midi,
+                            audio,
+                            sr,
+                            hopsize,
+                            n_fft=4096,
+                            merge_dlnco=True,
+                            sf2_path=None):
     """
     Synthesize midi file, align it to :attr: `audio` and returns a mapping
     between midi times and audio times.
@@ -98,12 +115,19 @@ def audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft=4096, merge_dlnco=Tr
     audio2 = audio
     # print("Starting alignment")
     wp = multiple_audio_alignment(audio1, sr, audio2, sr, hopsize, n_fft=n_fft)
-    wp_times = np.asarray(wp) * hopsize / sr # (330, 2) wrapping path
+    wp_times = np.asarray(wp) * hopsize / sr  # (330, 2) wrapping path
     # print("Finished alignment")
 
     return wp_times[::-1]
 
-def audio_to_score_alignment(mat, audio, sr, time_precision=0.02, n_fft=4096, merge_dlnco=True, sf2_path=None):
+
+def audio_to_score_alignment(mat,
+                             audio,
+                             sr,
+                             time_precision=0.02,
+                             n_fft=4096,
+                             merge_dlnco=True,
+                             sf2_path=None):
     """
     Synthesize a matrix of notes, align it to :attr: `audio` and returns a mapping
     between midi times and audio times.
@@ -146,7 +170,8 @@ def audio_to_score_alignment(mat, audio, sr, time_precision=0.02, n_fft=4096, me
         if program == 128:
             program = 0
             is_drum = True
-        tracks[program] = pretty_midi.Instrument(program=int(program), is_drum=is_drum)
+        tracks[program] = pretty_midi.Instrument(program=int(program),
+                                                 is_drum=is_drum)
 
     # creating pretty_midi.PrettyMIDI object and inserting notes
     midi = pretty_midi.PrettyMIDI()
@@ -156,19 +181,17 @@ def audio_to_score_alignment(mat, audio, sr, time_precision=0.02, n_fft=4096, me
         if program == 128:
             program = 0
         tracks[program].notes.append(
-            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2]))
-        )
+            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
 
     # aligning midi to audio
-    hopsize = 2**floor(log2(sr*time_precision))
-    mapping_times = audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft, merge_dlnco, sf2_path)
+    hopsize = 2**floor(log2(sr * time_precision))
+    mapping_times = audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft,
+                                            merge_dlnco, sf2_path)
 
-    # taking onsets and offsets
-    new_ons_idx = list(map(lambda x: take_closest_sorted(mapping_times[:, 0], x), mat[:, 1]))
-    new_offs_idx = list(map(lambda x: take_closest_sorted(mapping_times[:, 0], x), mat[:, 2]))
+    # interpolating
+    new_ons = np.interp(mat[:, 1], mapping_times[:, 0], mapping_times[:, 1])
+    new_offs = np.interp(mat[:, 2], mapping_times[:, 0], mapping_times[:, 1])
 
-    new_ons = mapping_times[new_ons_idx, 1]
-    new_offs = mapping_times[new_offs_idx, 1]
     return new_ons, new_offs
 
 
@@ -286,7 +309,6 @@ def audio_to_score_alignment(mat, audio, sr, time_precision=0.02, n_fft=4096, me
 
 #     # plt.tight_layout()
 #     plt.show()
-
 
 # if __name__ == "__main__":
 #     main()

@@ -16,16 +16,32 @@ class Tester:
             return 2
 
         if sys.argv[1] == "ewert":
-            from .ewert.align import audio_to_score_alignment
+            def ewert_alignment(i, data):
+                """
+                this is needed because google sucks
+                """
+                from .ewert.align import audio_to_score_alignment
+                mat = data.get_score(i, score_type='non_aligned')
+                audio, sr = data.get_audio(i)
+                return audio_to_score_alignment(mat, audio, sr)
+            self.align = ewert_alignment
             self.fname = "ewert.csv"
         elif sys.argv[1] == "amt":
-            from .align_with_amt import audio_to_score_alignment
+            def amt_alignment(i, data):
+                """
+                this is needed because google sucks and wants wav_data instead
+                of audio in a system package
+                """
+                from .align_with_amt import audio_to_score_alignment
+                mat = data.get_pianoroll(
+                    i, score_type='non_aligned', resolution=0.25)
+                path_file = data.paths[i][0]
+                return audio_to_score_alignment(mat, path_file)
+            self.align = amt_alignment
             self.fname = "amt.csv"
         else:
             print("Error: missing algorithm, provie `ewert` or `amt`")
             return 3
-
-        self.align = audio_to_score_alignment
 
         self.data = audioscoredataset.Dataset()
         self.data.filter(datasets=["SMD"])
@@ -39,11 +55,8 @@ class Tester:
 
     def path_processing(self, i, data):
         print(f"    Running Alignment on {data.paths[i][2][0]}")
-        mat = data.get_score(i, score_type='non_aligned')
         gt = data.get_score(i, score_type='precise_alignment')
-        audio, sr = data.get_audio(i)
-
-        new_ons, new_offs = self.align(mat, audio, sr)
+        new_ons, new_offs = self.align(i, data)
 
         # computing errors
         err_ons = new_ons - gt[:, 1]
