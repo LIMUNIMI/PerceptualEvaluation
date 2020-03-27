@@ -149,3 +149,22 @@ def specframe2sample(frame, hop_size=3072, win_len=4096):
     """
 
     return frame*hop_size + win_len / 2
+
+
+def make_pianoroll(mat, res=0.25):
+    """
+    return a pianoroll starting from a mat score from asmd
+
+    if velocities are available, it will be filled with velocity values
+    """
+
+    L = int(np.max(mat[:, 2]) / res) + 1
+
+    pr = np.zeros(128, L)
+
+    for note in mat:
+        start = np.round(note[1] / res)
+        end = np.round(note[2] / res)
+        vel = np.max(1, note[3])
+        pr[note[0], start:end] = vel
+    return pr

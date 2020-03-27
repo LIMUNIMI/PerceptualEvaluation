@@ -33,10 +33,10 @@ class Tester:
                 of audio in a system package
                 """
                 from .align_with_amt import audio_to_score_alignment
-                mat = data.get_pianoroll(
-                    i, score_type='non_aligned', resolution=0.25)
-                path_file = data.paths[i][0]
-                return audio_to_score_alignment(mat, path_file)
+                mat = data.get_score(i, score_type='non_aligned')
+                audio_path = data.paths[i][0]
+                return audio_to_score_alignment(
+                    mat, audio_path, 0.01)
             self.align = amt_alignment
             self.fname = "amt.csv"
         else:

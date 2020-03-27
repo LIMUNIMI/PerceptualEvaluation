@@ -10,6 +10,7 @@ import os
 import logging
 import librosa
 import numpy as np
+from .. import utils
 
 # suppress tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # FATAL
@@ -78,17 +79,18 @@ def transcription(wav_data, res):
     assert len(prediction_list) == 1
 
     frame_predictions = prediction_list[0]['frame_predictions'][0]
-    # convert to pianoroll with resolurion `res`
+    # convert to pianoroll with resolution `res`
     pianoroll = None
     return pianoroll
 
 
-def audio_to_score_alignment(misaligned, pianoroll, path, res):
-    wav_data = tf.gfile.Open(sys.argv[1], 'rb').read()
+def audio_to_score_alignment(misaligned, audio_path, res):
+    wav_data = tf.gfile.Open(audio_path, 'rb').read()
     audio_features = transcription(wav_data, res)
 
     # parameters for dtw were chosen with midi2midi on musicnet (see stw_test
     # in biseqnet)
+    pianoroll = utils.make_pianoroll(misaligned, res=res)
     _D, path = librosa.sequence.dtw(X=pianoroll,
                                     Y=audio_features,
                                     metric='cosine',
