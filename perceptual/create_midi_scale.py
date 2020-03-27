@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pretty_midi as pm
 
+
 def create_scale(duration, silence, velocity, start=0):
     """
     Returns a list of notes in scale from 21 to 108 included.
@@ -34,7 +35,7 @@ def create_scale(duration, silence, velocity, start=0):
 
 notes = []
 start = 1
-N_VELOCITY_LAYERS = 40
+N_VELOCITY_LAYERS = 10
 STEP = 127 // N_VELOCITY_LAYERS
 COUNTOUR = (127 % N_VELOCITY_LAYERS) // 2
 for i, v in enumerate(range(COUNTOUR, 127 - COUNTOUR - 1, STEP), start=1):
@@ -49,14 +50,14 @@ for i, v in enumerate(range(COUNTOUR, 127 - COUNTOUR - 1, STEP), start=1):
     new_scale, end = create_scale(0.1, -0.02, v, start)
     start = end + 1
     notes += new_scale
-    new_scale, end = create_scale(0.5, 0, v, start)
-    start = end + 1
-    notes += new_scale
-    new_scale, end = create_scale(0.5, 1, v, start)
-    start = end + 1
-    notes += new_scale
-    new_scale, end = create_scale(0.5, -0.02, v, start)
-    start = end + 1
+    # new_scale, end = create_scale(0.5, 0, v, start)
+    # start = end + 1
+    # notes += new_scale
+    # new_scale, end = create_scale(0.5, 1, v, start)
+    # start = end + 1
+    # notes += new_scale
+    # new_scale, end = create_scale(0.5, -0.02, v, start)
+    # start = end + 1
     notes += new_scale
     new_scale, end = create_scale(1.5, 0, v, start)
     start = end + 1
@@ -76,4 +77,4 @@ print("Total number of notes: ", len(notes))
 my_midi = pm.PrettyMIDI(initial_tempo=60)
 my_midi.instruments = [pm.Instrument(0)]
 my_midi.instruments[0].notes = notes
-my_midi.write('scales.mid')
+my_midi.write('to_be_synthesized/scales.mid')

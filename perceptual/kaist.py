@@ -1,6 +1,7 @@
 from copy import copy
 from .alignment.align_with_amt import audio_to_score_alignment
 from .nmf import NMF
+from .make_template import TEMPLATE_PATH, HOP_SIZE, SR, BASIS, FRAME_SIZE
 from essentia.standard import FrameGenerator, PowerSpectrum, Windowing
 import essentia as es
 from .utils import make_pianoroll
@@ -9,11 +10,10 @@ import torch
 from torch import nn
 
 DEVICE = 'cuda'
-TEMPLATE_PATH = 'nmf_template.pkl'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 
 
-def spectrogram(audio, frames=8192, hop=2048):
+def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 
     spectrogram = []
     w = Windowing(type='hann')
@@ -24,7 +24,7 @@ def spectrogram(audio, frames=8192, hop=2048):
     return es.array(spectrogram).T
 
 
-def transcribe(audio, sr, score, audio_path, initW, velocity_model, res=0.01):
+def transcribe(audio, score, audio_path, initW, velocity_model, res=0.01, sr=SR):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
     Align them and perform NMF with default templates.
@@ -44,7 +44,7 @@ def transcribe(audio, sr, score, audio_path, initW, velocity_model, res=0.01):
     # prepare initial matrices
     V = spectrogram(audio)
     res = (len(audio) / sr) / V.shape[1]
-    initH = make_pianoroll(score, res=res, basis=B)
+    initH = make_pianoroll(score, res=res, basis=BASIS)
     assert V.shape == (initW.shape[0], initH.shape[1]),\
         "V, W, H shapes are not comparable"
     assert initH.shape[0] == initW.shape[1],\
@@ -54,18 +54,18 @@ def transcribe(audio, sr, score, audio_path, initW, velocity_model, res=0.01):
     params = {'Mh': None, 'Mw': None}
 
     # perform nfm
-    NMF(V, initW, initH, params, B=B, num_iter=8)
+    NMF(V, initW, initH, params, B=BASIS, num_iter=8)
 
     # another update unconstrained
     params['a2'] = 0
     params['a3'] = 0
-    NMF(V, initW, initH, params, B=B, num_iter=1)
+    NMF(V, initW, initH, params, B=BASIS, num_iter=1)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
-    velocity_model = build_model((initW.shape[0], B))
-    initH = initH.reshape(B, 128, -1)
-    initW = initH.reshape(-1, 128, B)
+    velocity_model = build_model((initW.shape[0], BASIS))
+    initH = initH.reshape(BASIS, 128, -1)
+    initW = initH.reshape(-1, 128, BASIS)
     for note in score:
         start = int((note[1] - 0.05) * res)
         end = int((note[2] + 0.05) * res) + 1
@@ -104,6 +104,5 @@ if __name__ == '__main__':
         )
     else:
         initW = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        B = initW.shape[1] // 128
-        velocity_model = build_model((initW.shape[0], B))
+        velocity_model = build_model((initW.shape[0], BASIS))
         transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], initW, velocity_model)
