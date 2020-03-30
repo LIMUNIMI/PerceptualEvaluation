@@ -55,7 +55,7 @@ def farthest_points(samples, k, n, optimize=False):
         others_centroid = np.empty_like(kth_cluster)
 
         for l, j in enumerate(kth_cluster_indices):
-            others = np.concatenate((samples[:j], samples[j+1:]))
+            others = np.concatenate((samples[:j], samples[j + 1:]))
             others_centroid[l] = np.mean(others, axis=0)
 
         # np.partition returns an array with the `-n`-th element in the
@@ -75,18 +75,22 @@ def farthest_points(samples, k, n, optimize=False):
         m = np.argsort(np.sum(mat, axis=1))[-k:]
         vis.heatmap(mat)
         win = vis.scatter(X=samples, Y=clusters, opts={"markersize": 5})
-        vis.scatter(
-            X=samples[out[:, 0]],
-            update="append",
-            name="chosen",
-            win=win,
-            opts={"markersymbol": "cross-open", "markersize": 10})
-        vis.scatter(
-            X=samples[m],
-            update="append",
-            name="selfsim",
-            win=win,
-            opts={"markersymbol": "square", "markersize": 10})
+        vis.scatter(X=samples[out[:, 0]],
+                    update="append",
+                    name="chosen",
+                    win=win,
+                    opts={
+                        "markersymbol": "cross-open",
+                        "markersize": 10
+        })
+        vis.scatter(X=samples[m],
+                    update="append",
+                    name="selfsim",
+                    win=win,
+                    opts={
+                        "markersymbol": "square",
+                        "markersize": 10
+        })
 
     return out
 
@@ -95,7 +99,7 @@ def midi_pitch_to_f0(midi_pitch):
     """
     Return a frequency given a midi pitch
     """
-    return 440 * 2**((midi_pitch-69)/12)
+    return 440 * 2**((midi_pitch - 69) / 12)
 
 
 def find_start_stop(audio, sample_rate=44100, seconds=False):
@@ -118,7 +122,9 @@ def find_start_stop(audio, sample_rate=44100, seconds=False):
         the sample where sound ends or the corresponding second
     """
     processer = es.StartStopSilence(threshold=-60)
-    for frame in es.FrameGenerator(audio, frameSize=512, hopSize=128,
+    for frame in es.FrameGenerator(audio,
+                                   frameSize=512,
+                                   hopSize=128,
                                    startFromZero=True):
         start, stop = processer(frame)
 
@@ -148,10 +154,15 @@ def specframe2sample(frame, hop_size=3072, win_len=4096):
     Takes frame index (int) and returns the corresponding central time (sec)
     """
 
-    return frame*hop_size + win_len / 2
+    return frame * hop_size + win_len / 2
 
 
-def make_pianoroll(mat, res=0.25, velocities=True, basis=1, attack=0.08):
+def make_pianoroll(mat,
+                   res=0.25,
+                   velocities=True,
+                   basis=1,
+                   attack=1,
+                   basis_l=1):
     """
     return a pianoroll starting from a mat score from asmd
 
@@ -159,14 +170,13 @@ def make_pianoroll(mat, res=0.25, velocities=True, basis=1, attack=0.08):
     turn this off use `velocities=False`
 
     `basis` is the number of basis for the nmf; `attack` is the attack
-    duration, all other basis will be long 1 column except the last one that
-    will last till the end if needed
+    duration, all other basis will be long `basis_l` column except the last one
+    that will last till the end if needed
     """
 
     L = int(np.max(mat[:, 2]) / res) + 1
 
     pr = np.zeros(128, basis, L)
-    attack = max(attack // res, 1)
 
     for note in mat:
         start = np.round(note[1] / res)
@@ -177,16 +187,17 @@ def make_pianoroll(mat, res=0.25, velocities=True, basis=1, attack=0.08):
             vel = 1
 
         # the attack basis
-        pr[note[0], 0, start:start+attack] = vel
+        pr[note[0], 0, start:start + attack] = vel
 
         # all the other basis
         for b in range(attack + 1, min(end + 1, basis + 1)):
-            pr[note[0], b, start+b] = vel
+            pr[note[0], b,
+               start + b * basis_l:start + (b + 1) * basis_l] = vel
 
         # the ending part
         if start + b < end:
-            pr[note[0], b, start+b:end] = vel
+            pr[note[0], b, start + b * basis_l:end] = vel
 
     # collapse pitch and basis dimension
-    pr = pr.reshape(128*basis, -1)
+    pr = pr.reshape(128 * basis, -1)
     return pr

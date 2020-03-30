@@ -1,7 +1,7 @@
 from copy import copy
 from .alignment.align_with_amt import audio_to_score_alignment
 from .nmf import NMF
-from .make_template import TEMPLATE_PATH, HOP_SIZE, SR, BASIS, FRAME_SIZE
+from .make_template import TEMPLATE_PATH, HOP_SIZE, SR, BASIS, FRAME_SIZE, ATTACK
 from essentia.standard import FrameGenerator, PowerSpectrum, Windowing
 import essentia as es
 from .utils import make_pianoroll
@@ -24,7 +24,13 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
     return es.array(spectrogram).T
 
 
-def transcribe(audio, score, audio_path, initW, velocity_model, res=0.01, sr=SR):
+def transcribe(audio,
+               score,
+               audio_path,
+               initW,
+               velocity_model,
+               res=0.01,
+               sr=SR):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
     Align them and perform NMF with default templates.
@@ -43,9 +49,13 @@ def transcribe(audio, score, audio_path, initW, velocity_model, res=0.01, sr=SR)
 
     # prepare initial matrices
     V = spectrogram(audio)
-    res = (len(audio) / sr) / V.shape[1]
-    initH = make_pianoroll(score, res=res, basis=BASIS, velocities=False,
-                           attack=0.08)
+    res = (len(audio) /
+           sr) / V.shape[1]  # this depends upon SR, FRAME_SIZE and HOP_SIZE
+    initH = make_pianoroll(score,
+                           res=res,
+                           basis=BASIS,
+                           velocities=False,
+                           attack=ATTACK)
     assert V.shape == (initW.shape[0], initH.shape[1]),\
         "V, W, H shapes are not comparable"
     assert initH.shape[0] == initW.shape[1],\
@@ -106,4 +116,5 @@ if __name__ == '__main__':
     else:
         initW = pickle.load(open(TEMPLATE_PATH, 'rb'))
         velocity_model = build_model((initW.shape[0], BASIS))
-        transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], initW, velocity_model)
+        transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], initW,
+                              velocity_model)
