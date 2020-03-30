@@ -151,20 +151,42 @@ def specframe2sample(frame, hop_size=3072, win_len=4096):
     return frame*hop_size + win_len / 2
 
 
-def make_pianoroll(mat, res=0.25):
+def make_pianoroll(mat, res=0.25, velocities=True, basis=1, attack=0.08):
     """
     return a pianoroll starting from a mat score from asmd
 
-    if velocities are available, it will be filled with velocity values
+    if velocities are available, it will be filled with velocity values; to
+    turn this off use `velocities=False`
+
+    `basis` is the number of basis for the nmf; `attack` is the attack
+    duration, all other basis will be long 1 column except the last one that
+    will last till the end if needed
     """
 
     L = int(np.max(mat[:, 2]) / res) + 1
 
-    pr = np.zeros(128, L)
+    pr = np.zeros(128, basis, L)
+    attack = max(attack // res, 1)
 
     for note in mat:
         start = np.round(note[1] / res)
         end = np.round(note[2] / res)
-        vel = np.max(1, note[3])
-        pr[note[0], start:end] = vel
+        if velocities:
+            vel = np.max(1, note[3])
+        else:
+            vel = 1
+
+        # the attack basis
+        pr[note[0], 0, start:start+attack] = vel
+
+        # all the other basis
+        for b in range(attack + 1, min(end + 1, basis + 1)):
+            pr[note[0], b, start+b] = vel
+
+        # the ending part
+        if start + b < end:
+            pr[note[0], b, start+b:end] = vel
+
+    # collapse pitch and basis dimension
+    pr = pr.reshape(128*basis, -1)
     return pr

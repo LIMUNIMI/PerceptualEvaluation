@@ -44,7 +44,8 @@ def transcribe(audio, score, audio_path, initW, velocity_model, res=0.01, sr=SR)
     # prepare initial matrices
     V = spectrogram(audio)
     res = (len(audio) / sr) / V.shape[1]
-    initH = make_pianoroll(score, res=res, basis=BASIS)
+    initH = make_pianoroll(score, res=res, basis=BASIS, velocities=False,
+                           attack=0.08)
     assert V.shape == (initW.shape[0], initH.shape[1]),\
         "V, W, H shapes are not comparable"
     assert initH.shape[0] == initW.shape[1],\
