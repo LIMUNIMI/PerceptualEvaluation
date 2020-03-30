@@ -1,4 +1,5 @@
 import numpy as np
+import pretty_midi as pm
 from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
 import essentia.standard as es
@@ -157,6 +158,22 @@ def specframe2sample(frame, hop_size=3072, win_len=4096):
     return frame * hop_size + win_len / 2
 
 
+def midipath2mat(path):
+    """
+    Open a midi file  with one instrument track and construct a mat like asmd:
+
+    pitch, start (sec), end (sec), velocity
+    """
+
+    out = []
+    notes = pm.PrettyMIDI(midi_file=path).instruments[0].notes
+
+    for note in notes:
+        out.append([note.pitch, note.start, note.end, note.velocity])
+
+    return np.array(out)
+
+
 def make_pianoroll(mat,
                    res=0.25,
                    velocities=True,
@@ -179,24 +196,36 @@ def make_pianoroll(mat,
     pr = np.zeros((128, basis, L))
 
     for note in mat:
-        start = np.round(note[1] / res)
-        end = np.round(note[2] / res)
+        pitch = int(note[0])
+        vel = int(note[3])
+        start = int(np.round(note[1] / res))
+        end = int(np.round(note[2] / res)) + 1
         if velocities:
-            vel = np.max(1, note[3])
+            vel = max(1, vel)
         else:
             vel = 1
 
         # the attack basis
-        pr[note[0], 0, start:start + attack] = vel
+        pr[pitch, 0, start:start + attack] = vel
+
+        start += attack
 
         # all the other basis
-        for b in range(attack + 1, min(end + 1, basis + 1)):
-            pr[note[0], b,
-               start + b * basis_l:start + (b + 1) * basis_l] = vel
+        END = False
+        for b in range(basis):
+            for k in range(basis_l):
+                t = start + b * basis_l + k
+                if t < end:
+                    pr[pitch, b, t] = vel
+                else:
+                    END = True
+                    break
+            if END:
+                break
 
         # the ending part
-        if start + b < end:
-            pr[note[0], b, start + b * basis_l:end] = vel
+        if start + (basis - 1) * basis_l < end:
+            pr[pitch, basis - 1, start + (basis-1)*basis_l:end] = vel
 
     # collapse pitch and basis dimension
     pr = pr.reshape((128 * basis, -1), order='C')
