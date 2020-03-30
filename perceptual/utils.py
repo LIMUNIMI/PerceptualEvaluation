@@ -176,7 +176,7 @@ def make_pianoroll(mat,
 
     L = int(np.max(mat[:, 2]) / res) + 1
 
-    pr = np.zeros(128, basis, L)
+    pr = np.zeros((128, basis, L))
 
     for note in mat:
         start = np.round(note[1] / res)
@@ -199,5 +199,6 @@ def make_pianoroll(mat,
             pr[note[0], b, start + b * basis_l:end] = vel
 
     # collapse pitch and basis dimension
+    # TODO: check column order
     pr = pr.reshape(128 * basis, -1)
     return pr

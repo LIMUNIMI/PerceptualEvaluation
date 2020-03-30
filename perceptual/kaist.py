@@ -75,6 +75,7 @@ def transcribe(audio,
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
     velocity_model = build_model((initW.shape[0], BASIS))
+    # TODO: check column order
     initH = initH.reshape(BASIS, 128, -1)
     initW = initH.reshape(-1, 128, BASIS)
     for note in score:
