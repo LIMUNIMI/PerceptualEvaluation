@@ -7,9 +7,10 @@ import essentia.standard as esst
 from tqdm import trange
 
 SR = 22050
-FRAME_SIZE = 8192
+FRAME_SIZE = 16384
 HOP_SIZE = 2048
 BASIS = 10
+BINS = 100
 # the number of frames for the attack
 ATTACK = 1
 # the number of frames for the other basis
@@ -18,66 +19,89 @@ TEMPLATE_PATH = 'nmf_template.pkl'
 
 SCALE_PATH = ['to_be_synthesized/scales.mid', 'audio/pianoteq_scales.mp3']
 
-print("Loading midi")
-notes = pm.PrettyMIDI(midi_file=SCALE_PATH[0]).instruments[0].notes
-print("Loading audio")
-audio = esst.EasyLoader(filename=SCALE_PATH[1], sampleRate=SR)()
-w = esst.Windowing(type='hann')
-spectrum_computer = esst.PowerSpectrum(size=FRAME_SIZE)
 
-template = np.zeros((FRAME_SIZE // 2 + 1, BASIS, 128))
-counter = np.zeros((BASIS, 128))
+def main():
+    # w = esst.Windowing(type='hann')
+    # spec = esst.PowerSpectrum(size=FRAME_SIZE)
+    # logspec = esst.LogSpectrum(
+    #     frameSize=FRAME_SIZE // 2 + 1, sampleRate=SR, binsPerSemitone=3)
+    spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
 
-for i in trange(len(notes)):
-    note = notes[i]
-    # start and end frame
-    start = int(np.round((note.start - 0.01) * SR))
-    end = int(np.round((note.end + 0.01) * SR))
-    ENDED = False
+    print("Loading midi")
+    notes = pm.PrettyMIDI(midi_file=SCALE_PATH[0]).instruments[0].notes
+    print("Loading audio")
+    audio = esst.EasyLoader(filename=SCALE_PATH[1], sampleRate=SR)()
 
-    spd = np.zeros((FRAME_SIZE // 2 + 1, BASIS))
-    frames = esst.FrameGenerator(audio[start:end],
-                                 frameSize=FRAME_SIZE,
-                                 hopSize=HOP_SIZE)
-    # attack
-    for a in range(ATTACK):
-        try:
-            frame = next(frames)
-        except StopIteration:
-            print("Error: notes timing not correct")
-            print(f"note: {start}, {end}, {len(audio)}")
-            sys.exit(99)
-        spd[:, 0] += spectrum_computer(w(frame))
-    counter[0, note.pitch] += ATTACK
+    # template = np.zeros((FRAME_SIZE // 2 + 1, 128, BASIS))
+    template = np.zeros((BINS, 128, BASIS))
+    counter = np.zeros((128, BASIS))
 
-    # other basis except the last one
-    for b in range(1, BASIS-1):
+    maxpitch = 0
+    minpitch = 128
+
+    for i in trange(len(notes)):
+        note = notes[i]
+        if maxpitch < note.pitch:
+            maxpitch = note.pitch
+        if minpitch > note.pitch:
+            minpitch = note.pitch
+
+        # start and end frame
+        start = int(np.round((note.start) * SR))
+        end = int(np.round((note.end) * SR))
+        ENDED = False
+
+        spd = np.zeros((BINS, BASIS))
+        frames = esst.FrameGenerator(audio[start:end],
+                                     frameSize=FRAME_SIZE,
+                                     hopSize=HOP_SIZE)
+        # attack
+        for a in range(ATTACK):
+            try:
+                frame = next(frames)
+            except StopIteration:
+                print("Error: notes timing not correct")
+                print(f"note: {start}, {end}, {len(audio)}")
+                sys.exit(99)
+            # spd[:, 0] += logspec(spec(w(frame)))[0]
+            spd[:, 0] += spec(frame)
+        counter[note.pitch, 0] += ATTACK
+
+        # other basis except the last one
+        for b in range(1, BASIS-1):
+            if not ENDED:
+                for a in range(BASIS_L):
+                    try:
+                        frame = next(frames)
+                    except StopIteration:
+                        # note is shorter than the number of basis
+                        ENDED = True
+                        break
+                    # spd[:, b] += logspec(spec(w(frame)))[0]
+                    spd[:, b] += spec(frame)
+                    counter[note.pitch, b] += 1
+
+        # last basis
         if not ENDED:
-            for a in range(BASIS_L):
-                try:
-                    frame = next(frames)
-                except StopIteration:
-                    # note is shorter than the number of basis
-                    ENDED = True
-                    break
-                spd[:, b] += spectrum_computer(w(frame))
-                counter[b, note.pitch] += 1
+            for frame in frames:
+                # spd[:, BASIS-1] += logspec(spec(w(frame)))[0]
+                spd[:, BASIS-1] += spec(frame)
+                counter[note.pitch, BASIS-1] += 1
+        template[:, note.pitch, :] += spd
 
-    # last basis
-    if not ENDED:
-        for frame in frames:
-            spd[:, BASIS-1] += spectrum_computer(w(frame))
-            counter[BASIS-1, note.pitch] += 1
-    template[:, :, note.pitch] += spd
+    idx = np.nonzero(counter)
+    template[:, idx[0], idx[1]] /= counter[idx]
 
-idx = np.nonzero(counter)
-template[:, idx[0], idx[1]] /= counter[idx]
-# collapsing basis and pitch dimension
-template = template.reshape(-1, 128 * BASIS, order='F')
+    # collapsing basis and pitch dimension
+    template = template.reshape((-1, 128 * BASIS), order='C')
 
-# plot template
-fig = go.Figure(data=go.Heatmap(z=template))
-fig.show()
+    # plot template
+    fig = go.Figure(data=go.Heatmap(z=template))
+    fig.show()
 
-# saving template
-pickle.dump(template, open(TEMPLATE_PATH, 'wb'))
+    # saving template
+    pickle.dump((template, minpitch, maxpitch), open(TEMPLATE_PATH, 'wb'))
+
+
+if __name__ == "__main__":
+    main()

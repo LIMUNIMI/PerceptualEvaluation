@@ -1,8 +1,9 @@
 from copy import copy
 from .alignment.align_with_amt import audio_to_score_alignment
 from .nmf import NMF
-from .make_template import TEMPLATE_PATH, HOP_SIZE, SR, BASIS, FRAME_SIZE, ATTACK
-from essentia.standard import FrameGenerator, PowerSpectrum, Windowing
+from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
+from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
+import essentia.standard as esst
 import essentia as es
 from .utils import make_pianoroll
 import pickle
@@ -16,10 +17,13 @@ VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 
     spectrogram = []
-    w = Windowing(type='hann')
-    spectrum_computer = PowerSpectrum(frames)
-    for frame in FrameGenerator(frameSize=frames, hopSize=hop):
-        spectrogram.append(spectrum_computer(w(frame)))
+    spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
+    # w = esst.Windowing(type='hann')
+    # spec = esst.PowerSpectrum(size=FRAME_SIZE)
+    # logspec = esst.LogSpectrum(
+    #     frameSize=FRAME_SIZE // 2 + 1, sampleRate=SR, binsPerSemitone=3)
+    for frame in esst.FrameGenerator(frameSize=frames, hopSize=hop):
+        spectrogram.append(spec(frame))
 
     return es.array(spectrogram).T
 
@@ -27,7 +31,7 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 def transcribe(audio,
                score,
                audio_path,
-               initW,
+               data,
                velocity_model,
                res=0.01,
                sr=SR):
@@ -41,6 +45,7 @@ def transcribe(audio,
     `velocity_model` is a callable wich takes a minispectrogram and returns the
     velocity (e.g. a PyTorch nn.Module)
     """
+    initW, minpitch, maxpitch = data
     score = copy(score)
     # align score
     new_ons, new_offs = audio_to_score_alignment(score, audio_path, res=res)
@@ -64,6 +69,9 @@ def transcribe(audio,
     # prepare constraints
     params = {'Mh': None, 'Mw': None}
 
+    initW = initW[:, minpitch:maxpitch + 1]
+    initH = initH[minpitch:maxpitch + 1, :]
+
     # perform nfm
     NMF(V, initW, initH, params, B=BASIS, num_iter=8)
 
@@ -75,13 +83,15 @@ def transcribe(audio,
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
     velocity_model = build_model((initW.shape[0], BASIS))
-    # TODO: check column order
-    initH = initH.reshape(BASIS, 128, -1)
-    initW = initH.reshape(-1, 128, BASIS)
+    npitch = maxpitch - minpitch + 1
+    initH = initH.reshape(npitch, BASIS, -1)
+    initW = initH.reshape((-1, npitch, BASIS), order='C')
     for note in score:
         start = int((note[1] - 0.05) * res)
         end = int((note[2] + 0.05) * res) + 1
-        mini_spec = initW[:, note[0], :] * initH[:, note[0], start:end]
+        mini_spec = initW[:, note[0] - minpitch, :] *\
+            initH[note[0] - minpitch, :, start:end]
+
         # numpy to torch and add batch dimension
         mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
         vel = velocity_model(mini_spec)
@@ -115,7 +125,7 @@ if __name__ == '__main__':
             f"Usage: {sys.argv[0]} [audio_path], [midi_score_path] [midi_output_path]"
         )
     else:
-        initW = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        velocity_model = build_model((initW.shape[0], BASIS))
-        transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], initW,
+        data = pickle.load(open(TEMPLATE_PATH, 'rb'))
+        velocity_model = build_model((data[0].shape[0], BASIS))
+        transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], data,
                               velocity_model)
