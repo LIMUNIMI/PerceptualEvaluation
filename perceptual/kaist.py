@@ -22,7 +22,7 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
     # spec = esst.PowerSpectrum(size=FRAME_SIZE)
     # logspec = esst.LogSpectrum(
     #     frameSize=FRAME_SIZE // 2 + 1, sampleRate=SR, binsPerSemitone=3)
-    for frame in esst.FrameGenerator(frameSize=frames, hopSize=hop):
+    for frame in esst.FrameGenerator(audio, frameSize=frames, hopSize=hop):
         spectrogram.append(spec(frame))
 
     return es.array(spectrogram).T
@@ -61,6 +61,9 @@ def transcribe(audio,
                            basis=BASIS,
                            velocities=False,
                            attack=ATTACK)
+    # remove trailing zeros in initH
+    # remove ending and starting silence in audio
+    # rescale pianoroll
     assert V.shape == (initW.shape[0], initH.shape[1]),\
         "V, W, H shapes are not comparable"
     assert initH.shape[0] == initW.shape[1],\
@@ -69,8 +72,8 @@ def transcribe(audio,
     # prepare constraints
     params = {'Mh': None, 'Mw': None}
 
-    initW = initW[:, minpitch:maxpitch + 1]
-    initH = initH[minpitch:maxpitch + 1, :]
+    initW = initW[:, minpitch*BASIS:(maxpitch + 1)*BASIS]
+    initH = initH[minpitch*BASIS:(maxpitch + 1)*BASIS, :]
 
     # perform nfm
     NMF(V, initW, initH, params, B=BASIS, num_iter=8)
