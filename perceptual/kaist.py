@@ -1,5 +1,4 @@
 from copy import copy
-# from .alignment.align_with_amt import audio_to_score_alignment
 from .nmf import NMF
 from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
 from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
@@ -7,27 +6,19 @@ import essentia.standard as esst
 import essentia as es
 from .utils import make_pianoroll, find_start_stop
 import pickle
-# import torch
-# from torch import nn
+import torch
+from torch import nn
 import numpy as np
 
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
-COST_FUNC = 'Music'
-
-
-def audio_to_score_alignment(a, b, res=6):
-    pass
+COST_FUNC = 'EucDist'
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 
     spectrogram = []
     spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
-    # w = esst.Windowing(type='hann')
-    # spec = esst.PowerSpectrum(size=FRAME_SIZE)
-    # logspec = esst.LogSpectrum(
-    #     frameSize=FRAME_SIZE // 2 + 1, sampleRate=SR, binsPerSemitone=3)
     for frame in esst.FrameGenerator(audio, frameSize=frames, hopSize=hop):
         spectrogram.append(spec(frame))
 
@@ -101,27 +92,26 @@ def transcribe(audio,
     initW = initW[:, minpitch * BASIS:(maxpitch + 1) * BASIS]
     initH = initH[minpitch * BASIS:(maxpitch + 1) * BASIS, :]
 
-    # prepare constraints
-    params = init_params(initW, initH)
+    params = {'Mh': copy(initH), 'Mw': copy(initW)}
 
     # perform nfm
     NMF(V,
         initW,
         initH,
+        params=params,
         B=BASIS,
-        num_iter=80,
+        num_iter=20,
         cost_func=COST_FUNC)
 
-    # another update unconstrained
-    params['a2'] = 0
     params['a3'] = 0
     NMF(V,
         initW,
         initH,
         params=params,
         B=BASIS,
-        num_iter=10,
-        cost_func=COST_FUNC)
+        num_iter=2,
+        cost_func=COST_FUNC,
+        fixW=True)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
@@ -143,19 +133,15 @@ def transcribe(audio,
     return score, V, initW, initH
 
 
-# def build_model(spec_size):
-#     n_in, n_h, n_out = spec_size[0], spec_size[1], 1
-#     model = nn.Sequential(nn.Linear(n_in, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-#                           nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
-#                           nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-#                           nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
-#     model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
+def build_model(spec_size):
+    n_in, n_h, n_out = spec_size[0], spec_size[1], 1
+    model = nn.Sequential(nn.Linear(n_in, n_h), nn.SELU(), nn.Linear(n_h, n_h),
+                          nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
+                          nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
+                          nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
+    model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
 
-#     return model
-
-
-def init_params(initW, initH):
-    return {'Mh': copy(initH), 'Mw': copy(initW)}
+    return model
 
 
 def transcribe_from_paths(audio_path, midi_score_path, tofile=''):

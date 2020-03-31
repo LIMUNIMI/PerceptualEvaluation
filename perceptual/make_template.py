@@ -8,7 +8,7 @@ from tqdm import trange
 
 SR = 22050
 FRAME_SIZE = 16384
-HOP_SIZE = 2048
+HOP_SIZE = 1024
 BASIS = 20
 BINS = 100
 # the number of frames for the attack
@@ -21,10 +21,6 @@ SCALE_PATH = ['to_be_synthesized/scales.mid', 'audio/pianoteq_scales.mp3']
 
 
 def main():
-    # w = esst.Windowing(type='hann')
-    # spec = esst.PowerSpectrum(size=FRAME_SIZE)
-    # logspec = esst.LogSpectrum(
-    #     frameSize=FRAME_SIZE // 2 + 1, sampleRate=SR, binsPerSemitone=3)
     spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
 
     print("Loading midi")
@@ -63,7 +59,6 @@ def main():
                 print("Error: notes timing not correct")
                 print(f"note: {start}, {end}, {len(audio)}")
                 sys.exit(99)
-            # spd[:, 0] += logspec(spec(w(frame)))[0]
             spd[:, 0] += spec(frame)
         counter[note.pitch, 0] += ATTACK
 
@@ -77,14 +72,12 @@ def main():
                         # note is shorter than the number of basis
                         ENDED = True
                         break
-                    # spd[:, b] += logspec(spec(w(frame)))[0]
                     spd[:, b] += spec(frame)
                     counter[note.pitch, b] += 1
 
         # last basis
         if not ENDED:
             for frame in frames:
-                # spd[:, BASIS-1] += logspec(spec(w(frame)))[0]
                 spd[:, BASIS-1] += spec(frame)
                 counter[note.pitch, BASIS-1] += 1
         template[:, note.pitch, :] += spd

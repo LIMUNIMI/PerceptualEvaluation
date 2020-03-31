@@ -59,7 +59,7 @@ def NMF(V,
 
         `Mh` and `Mw` *MUST* be provided, the others can miss and in that case
         the following are used [3]:
-            a1, a2, a3, b1, b2 = 30, 1, 100, 10, 1000
+            a1, a2, a3, b1, b2 = 0, 1e3, 1, 1e2, 0
 
     B : int
         the number of basis for template
@@ -73,11 +73,11 @@ def NMF(V,
         if "Mh" not in params or "Mw" not in params:
             raise RuntimeError("Mh and Mw *MUST* be provided")
         params = {
-            "a1": params.get("a1") or 30,
-            "a2": params.get("a2") or 1,
-            "a3": params.get("a3") or 100,
-            "b1": params.get("b1") or 10,
-            "b2": params.get("b2") or 1000,
+            "a1": params.get("a1") or 0,
+            "a2": params.get("a2") or 1e3,
+            "a3": params.get("a3") or 1,
+            "b1": params.get("b1") or 1e2,
+            "b2": params.get("b2") or 0,
             "Mh": params["Mh"],
             "Mw": params["Mw"]
         }
@@ -133,7 +133,7 @@ def NMF(V,
             numH = W.T @ (V / Lambda) + p.a1 * p.Mh
             numH[:, B:] += p.a2 * H[:, B:]
             numH[:, :-B] += H[:, :-B]
-            H *= numH / (W.T @ onesMatrix + p.a1 + p.a3 + 4 * p.a2 * H)
+            H *= numH / (W.T @ onesMatrix + EPS + p.a1 + p.a3 + 4 * p.a2 * H)
 
         else:
             raise ValueError('Unknown cost function')
