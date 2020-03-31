@@ -9,7 +9,7 @@ from tqdm import trange
 SR = 22050
 FRAME_SIZE = 16384
 HOP_SIZE = 2048
-BASIS = 10
+BASIS = 20
 BINS = 100
 # the number of frames for the attack
 ATTACK = 1

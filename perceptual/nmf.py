@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import numpy as np
 from tqdm import trange
 
@@ -69,14 +70,18 @@ def NMF(V,
     L = num_iter
     if cost_func == 'Music':
         # default ones
-        a1, a2, a3, b1, b2, Mh, Mw = 30, 1, 100, 10, 1000, None, None
-        if params:
-            # load dictionary
-            locals().update(params)
-            if 'Mh' not in params or 'Mw' not in params:
-                raise RuntimeError("Mh and Mw *MUST* be provided")
-        else:
-            raise RuntimeError("Please, provide params for `Music` cost function")
+        if "Mh" not in params or "Mw" not in params:
+            raise RuntimeError("Mh and Mw *MUST* be provided")
+        params = {
+            "a1": params.get("a1") or 30,
+            "a2": params.get("a2") or 1,
+            "a3": params.get("a3") or 100,
+            "b1": params.get("b1") or 10,
+            "b2": params.get("b2") or 1000,
+            "Mh": params["Mh"],
+            "Mw": params["Mw"]
+        }
+        p = SimpleNamespace(**params)
 
     # create helper matrix of all ones
     onesMatrix = np.ones((K, M))
@@ -117,18 +122,18 @@ def NMF(V,
 
             if not fixW:
                 W_indicator = np.zeros_like(W)
-                W_indicator[:, ::B] += W
+                W_indicator[:, ::B] += W[:, ::B]
                 numW = (V / Lambda) @ H.T
-                numW[1:] += 2 * b1 * W_indicator[1:]
-                numW[:-1] += 2 * b1 * W_indicator[:-1] + b2 * Mw
+                numW[1:] += 2 * p.b1 * W_indicator[1:]
+                numW[:-1] += 2 * p.b1 * W_indicator[:-1] + p.b2 * p.Mw[:-1]
 
-                W *= numW / (onesMatrix @ H.T + EPS + b2 +
-                             4 * b1 * W_indicator)
+                W *= numW / (onesMatrix @ H.T + EPS + p.b2 +
+                             4 * p.b1 * W_indicator)
 
-            numH = W.T @ (V / Lambda) + a1 * Mh
-            numH[:, B:] += a2 * H[:, B:]
+            numH = W.T @ (V / Lambda) + p.a1 * p.Mh
+            numH[:, B:] += p.a2 * H[:, B:]
             numH[:, :-B] += H[:, :-B]
-            H *= numH / (W.T @ onesMatrix + a1 + a3 + 4 * a2 * H)
+            H *= numH / (W.T @ onesMatrix + p.a1 + p.a3 + 4 * p.a2 * H)
 
         else:
             raise ValueError('Unknown cost function')

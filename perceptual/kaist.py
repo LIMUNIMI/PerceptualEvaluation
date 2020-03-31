@@ -1,17 +1,23 @@
 from copy import copy
-from .alignment.align_with_amt import audio_to_score_alignment
+# from .alignment.align_with_amt import audio_to_score_alignment
 from .nmf import NMF
 from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
 from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
 import essentia.standard as esst
 import essentia as es
-from .utils import make_pianoroll
+from .utils import make_pianoroll, find_start_stop
 import pickle
-import torch
-from torch import nn
+# import torch
+# from torch import nn
+import numpy as np
 
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
+COST_FUNC = 'Music'
+
+
+def audio_to_score_alignment(a, b, res=6):
+    pass
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -30,11 +36,12 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 
 def transcribe(audio,
                score,
-               audio_path,
                data,
-               velocity_model,
+               velocity_model=None,
+               audio_path=None,
                res=0.01,
-               sr=SR):
+               sr=SR,
+               align=True):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
     Align them and perform NMF with default templates.
@@ -44,74 +51,111 @@ def transcribe(audio,
 
     `velocity_model` is a callable wich takes a minispectrogram and returns the
     velocity (e.g. a PyTorch nn.Module)
+
+    `align` False can be used for testing other alignment procedures; in that
+    case `audio_path` and `res` can be ignored
+
     """
     initW, minpitch, maxpitch = data
     score = copy(score)
-    # align score
-    new_ons, new_offs = audio_to_score_alignment(score, audio_path, res=res)
-    score[:, 1] = new_ons
-    score[:, 2] = new_offs
+    if align:
+        # align score
+        new_ons, new_offs = audio_to_score_alignment(score,
+                                                     audio_path,
+                                                     res=res)
+        score[:, 1] = new_ons
+        score[:, 2] = new_offs
 
     # prepare initial matrices
+
+    # remove stoping and starting silence in audio
+    start, stop = find_start_stop(audio, sample_rate=sr)
+    audio = audio[start:stop]
     V = spectrogram(audio)
-    res = (len(audio) /
-           sr) / V.shape[1]  # this depends upon SR, FRAME_SIZE and HOP_SIZE
-    initH = make_pianoroll(score,
-                           res=res,
-                           basis=BASIS,
-                           velocities=False,
-                           attack=ATTACK)
+
+    # compute the needed resolution for pianoroll
+    res = len(audio) / sr / V.shape[1]
+    pr = make_pianoroll(score,
+                        res=res,
+                        basis=BASIS,
+                        velocities=False,
+                        attack=ATTACK)
+
     # remove trailing zeros in initH
-    # remove ending and starting silence in audio
-    # rescale pianoroll
+    nonzero_cols = pr.any(axis=0).nonzero()[0]
+    start = nonzero_cols[0]
+    stop = nonzero_cols[-1]
+    pr = pr[:, start:stop + 1]
+
+    # stretch pianoroll
+    ratio = pr.shape[1] / V.shape[1]
+    initH = np.array(
+        list(map(lambda i: pr[:, round(i * ratio)], range(V.shape[1])))).T
+
+    # check shapes
     assert V.shape == (initW.shape[0], initH.shape[1]),\
         "V, W, H shapes are not comparable"
     assert initH.shape[0] == initW.shape[1],\
         "W, H have different ranks"
 
-    # prepare constraints
-    params = {'Mh': None, 'Mw': None}
+    initW = initW[:, minpitch * BASIS:(maxpitch + 1) * BASIS]
+    initH = initH[minpitch * BASIS:(maxpitch + 1) * BASIS, :]
 
-    initW = initW[:, minpitch*BASIS:(maxpitch + 1)*BASIS]
-    initH = initH[minpitch*BASIS:(maxpitch + 1)*BASIS, :]
+    # prepare constraints
+    params = init_params(initW, initH)
 
     # perform nfm
-    NMF(V, initW, initH, params, B=BASIS, num_iter=8)
+    NMF(V,
+        initW,
+        initH,
+        B=BASIS,
+        num_iter=80,
+        cost_func=COST_FUNC)
 
     # another update unconstrained
     params['a2'] = 0
     params['a3'] = 0
-    NMF(V, initW, initH, params, B=BASIS, num_iter=1)
+    NMF(V,
+        initW,
+        initH,
+        params=params,
+        B=BASIS,
+        num_iter=10,
+        cost_func=COST_FUNC)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
-    velocity_model = build_model((initW.shape[0], BASIS))
-    npitch = maxpitch - minpitch + 1
-    initH = initH.reshape(npitch, BASIS, -1)
-    initW = initH.reshape((-1, npitch, BASIS), order='C')
-    for note in score:
-        start = int((note[1] - 0.05) * res)
-        end = int((note[2] + 0.05) * res) + 1
-        mini_spec = initW[:, note[0] - minpitch, :] *\
-            initH[note[0] - minpitch, :, start:end]
+    if velocity_model:
+        npitch = maxpitch - minpitch + 1
+        initH = initH.reshape(npitch, BASIS, -1)
+        initW = initH.reshape((-1, npitch, BASIS), order='C')
+        for note in score:
+            start = int((note[1] - 0.05) * res)
+            end = int((note[2] + 0.05) * res) + 1
+            mini_spec = initW[:, note[0] - minpitch, :] *\
+                initH[note[0] - minpitch, :, start:end]
 
-        # numpy to torch and add batch dimension
-        mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
-        vel = velocity_model(mini_spec)
-        note[3] = vel.cpu().value
+            # numpy to torch and add batch dimension
+            # mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
+            vel = velocity_model(mini_spec)
+            note[3] = vel.cpu().value
 
-    return score
+    return score, V, initW, initH
 
 
-def build_model(spec_size):
-    n_in, n_h, n_out = spec_size[0], spec_size[1], 1
-    model = nn.Sequential(nn.Linear(n_in, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-                          nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
-                          nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-                          nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
-    model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
+# def build_model(spec_size):
+#     n_in, n_h, n_out = spec_size[0], spec_size[1], 1
+#     model = nn.Sequential(nn.Linear(n_in, n_h), nn.SELU(), nn.Linear(n_h, n_h),
+#                           nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
+#                           nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
+#                           nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
+#     model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
 
-    return model
+#     return model
+
+
+def init_params(initW, initH):
+    return {'Mh': copy(initH), 'Mw': copy(initW)}
 
 
 def transcribe_from_paths(audio_path, midi_score_path, tofile=''):
