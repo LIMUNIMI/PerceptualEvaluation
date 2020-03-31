@@ -1,12 +1,12 @@
 from copy import copy
 from .nmf import NMF
+from .alignment.align_with_amt import audio_to_score_alignment
 from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
 from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
 import essentia.standard as esst
 import essentia as es
-from .utils import make_pianoroll, find_start_stop
+from .utils import make_pianoroll, find_start_stop, midipath2mat
 import pickle
-import torch
 from torch import nn
 import numpy as np
 
@@ -28,7 +28,7 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 def transcribe(audio,
                score,
                data,
-               velocity_model=None,
+               velocity_model,
                audio_path=None,
                res=0.01,
                sr=SR,
@@ -115,20 +115,19 @@ def transcribe(audio,
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
-    if velocity_model:
-        npitch = maxpitch - minpitch + 1
-        initH = initH.reshape(npitch, BASIS, -1)
-        initW = initH.reshape((-1, npitch, BASIS), order='C')
-        for note in score:
-            start = int((note[1] - 0.05) * res)
-            end = int((note[2] + 0.05) * res) + 1
-            mini_spec = initW[:, note[0] - minpitch, :] *\
-                initH[note[0] - minpitch, :, start:end]
+    npitch = maxpitch - minpitch + 1
+    initH = initH.reshape(npitch, BASIS, -1)
+    initW = initH.reshape((-1, npitch, BASIS), order='C')
+    for note in score:
+        start = int((note[1] - 0.05) * res)
+        end = int((note[2] + 0.05) * res) + 1
+        mini_spec = initW[:, note[0] - minpitch, :] *\
+            initH[note[0] - minpitch, :, start:end]
 
-            # numpy to torch and add batch dimension
-            # mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
-            vel = velocity_model(mini_spec)
-            note[3] = vel.cpu().value
+        # numpy to torch and add batch dimension
+        # mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
+        vel = velocity_model(mini_spec)
+        note[3] = vel.cpu().value
 
     return score, V, initW, initH
 
@@ -139,16 +138,29 @@ def build_model(spec_size):
                           nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
                           nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
                           nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
-    model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
+    # model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
 
     return model
 
 
-def transcribe_from_paths(audio_path, midi_score_path, tofile=''):
+def transcribe_from_paths(audio_path,
+                          midi_score_path,
+                          data,
+                          velocity_model,
+                          tofile='out.mid'):
     """
     Load a midi and an audio file and call `transcribe`. If `tofile` is not
     empty, it will also write a new MIDI file with the provided path.
     """
+    audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)
+    score = midipath2mat(midi_score_path)
+    new_score = transcribe(audio,
+                           score,
+                           data,
+                           velocity_model,
+                           audio_path=audio_path)
+
+    # write midi
 
 
 if __name__ == '__main__':
@@ -160,5 +172,5 @@ if __name__ == '__main__':
     else:
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         velocity_model = build_model((data[0].shape[0], BASIS))
-        transcribe_from_paths(sys.argv[1], sys.argv[2], sys.argv[3], data,
-                              velocity_model)
+        transcribe_from_paths(sys.argv[1], sys.argv[2], data, velocity_model,
+                              sys.argv[3])

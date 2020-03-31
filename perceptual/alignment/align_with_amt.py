@@ -48,6 +48,7 @@ def transcription(wav_data, res):
     iterator = dataset.make_initializable_iterator()
     next_record = iterator.get_next()
 
+    __import__('ipdb').set_trace()
     example_list = list(
         audio_label_data_utils.process_record(wav_data=wav_data,
                                               ns=music_pb2.NoteSequence(),
@@ -80,6 +81,7 @@ def transcription(wav_data, res):
 
     frame_predictions = prediction_list[0]['frame_predictions'][0]
     # convert to pianoroll with resolution `res`
+    __import__('ipdb').set_trace()
     pianoroll = None
     return pianoroll
 

@@ -64,6 +64,9 @@ def NMF(V,
     B : int
         the number of basis for template
     """
+    if not fixW:
+        normVec = W.sum(axis=0)
+        W *= 1.0 / (EPS + normVec)
 
     # get important params
     K, M = V.shape
