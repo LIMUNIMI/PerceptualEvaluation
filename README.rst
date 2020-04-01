@@ -62,6 +62,13 @@ Build tests
 Objective evaluation
 --------------------
 
+Preparation
+___________
+
+#. Install fluidsynth and download and uncompress Arachno soundfont in your
+working directory
+#. Download our pretrained vienna model on Maestro
+
 To run the objective evaluation use
 
     ``poetry run python -m perceptual.objective_eval``

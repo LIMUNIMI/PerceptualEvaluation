@@ -6,9 +6,9 @@ from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
 import essentia.standard as esst
 import essentia as es
 from .utils import make_pianoroll, find_start_stop, midipath2mat
+from .utils import stretch_pianoroll
 import pickle
 from torch import nn
-import numpy as np
 
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
@@ -29,8 +29,7 @@ def transcribe(audio,
                score,
                data,
                velocity_model,
-               audio_path=None,
-               res=0.01,
+               res=0.02,
                sr=SR,
                align=True):
     """
@@ -51,9 +50,7 @@ def transcribe(audio,
     score = copy(score)
     if align:
         # align score
-        new_ons, new_offs = audio_to_score_alignment(score,
-                                                     audio_path,
-                                                     res=res)
+        new_ons, new_offs = audio_to_score_alignment(score, audio, sr, res=res)
         score[:, 1] = new_ons
         score[:, 2] = new_offs
 
@@ -79,9 +76,7 @@ def transcribe(audio,
     pr = pr[:, start:stop + 1]
 
     # stretch pianoroll
-    ratio = pr.shape[1] / V.shape[1]
-    initH = np.array(
-        list(map(lambda i: pr[:, round(i * ratio)], range(V.shape[1])))).T
+    initH = stretch_pianoroll(pr, V.shape[1])
 
     # check shapes
     assert V.shape == (initW.shape[0], initH.shape[1]),\
@@ -152,13 +147,9 @@ def transcribe_from_paths(audio_path,
     Load a midi and an audio file and call `transcribe`. If `tofile` is not
     empty, it will also write a new MIDI file with the provided path.
     """
-    audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)
+    audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
     score = midipath2mat(midi_score_path)
-    new_score = transcribe(audio,
-                           score,
-                           data,
-                           velocity_model,
-                           audio_path=audio_path)
+    new_score = transcribe(audio, score, data, velocity_model)
 
     # write midi
 

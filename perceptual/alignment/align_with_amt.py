@@ -1,5 +1,5 @@
-import sys
 import tensorflow as tf
+from magenta.music import audio_io
 from magenta.models.onsets_frames_transcription import audio_label_data_utils
 from magenta.models.onsets_frames_transcription import configs
 from magenta.models.onsets_frames_transcription import data
@@ -20,15 +20,31 @@ logging.getLogger('tensorflow').setLevel(logging.FATAL)
 # Only needs to be run once.
 CHECKPOINT_DIR = './perceptual/magenta/train/'
 
+START_NOTE = 21
+EPS = np.finfo(np.float64).eps
 
-def transcription(wav_data, res):
+
+def google_sucks(samples, sr):
     """
-    Google sucks and want to use raw wav instead of decoded samples loosing in
-    decoupling...
+    Google sucks and want to use audio path (raw wav) instead of decoded
+    samples loosing in decoupling between file format and DSP.
+    This hack overwrites their stupid loader which writed data to a temprorary
+    file and reopen it
     """
 
-    # almost everything here is copied from
-    # https://colab.research.google.com/notebooks/magenta/onsets_frames_transcription/onsets_frames_transcription.ipynb
+    return samples
+
+
+def transcription(audio, sr, res=0.02):
+    """
+    Google sucks and want to use audio path (raw wav) instead of decoded
+    samples loosing in decoupling between file format and DSP
+    """
+
+    # simple hack because google hacks... in this way we cna accept audio data already loaded
+    original_google_sucks = audio_io.wav_data_to_samples
+    audio_io.wav_data_to_samples = google_sucks
+    audio = np.array(audio)
     config = configs.CONFIG_MAP['onsets_frames']
     hparams = config.hparams
     hparams.use_cudnn = False
@@ -48,14 +64,15 @@ def transcription(wav_data, res):
     iterator = dataset.make_initializable_iterator()
     next_record = iterator.get_next()
 
-    __import__('ipdb').set_trace()
     example_list = list(
-        audio_label_data_utils.process_record(wav_data=wav_data,
+        audio_label_data_utils.process_record(wav_data=audio,
+                                              sample_rate=sr,
                                               ns=music_pb2.NoteSequence(),
-                                              example_id="0",
+                                              example_id="fakeid",
                                               min_length=0,
                                               max_length=-1,
-                                              allow_empty_notesequence=True))
+                                              allow_empty_notesequence=True,
+                                              load_audio_with_librosa=False))
     assert len(example_list) == 1
     to_process = [example_list[0].SerializeToString()]
 
@@ -72,6 +89,9 @@ def transcription(wav_data, res):
         del params
         return tf.data.Dataset.from_tensors(sess.run(next_record))
 
+    # put back the original function (it still writes and reload... stupid
+    # though
+    audio_io.wav_data_to_samples = original_google_sucks
     input_fn = infer_util.labels_to_features_wrapper(transcription_data)
 
     prediction_list = list(
@@ -80,19 +100,21 @@ def transcription(wav_data, res):
     assert len(prediction_list) == 1
 
     frame_predictions = prediction_list[0]['frame_predictions'][0]
+
     # convert to pianoroll with resolution `res`
-    __import__('ipdb').set_trace()
-    pianoroll = None
-    return pianoroll
+    n_cols = round(len(audio) / sr / res)
+    frame_predictions = utils.stretch_pianoroll(frame_predictions.T, n_cols)
+    pr = np.zeros((128, n_cols))
+    pr[21:109] = frame_predictions
+    return pr
 
 
-def audio_to_score_alignment(misaligned, audio_path, res):
-    wav_data = tf.gfile.Open(audio_path, 'rb').read()
-    audio_features = transcription(wav_data, res)
+def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
+    audio_features = transcription(audio, sr, res) + EPS
 
-    # parameters for dtw were chosen with midi2midi on musicnet (see stw_test
+    # parameters for dtw were chosen with midi2midi on musicnet (see dtw_test
     # in biseqnet)
-    pianoroll = utils.make_pianoroll(misaligned, res=res)
+    pianoroll = utils.make_pianoroll(misaligned, res=res) + EPS
     _D, path = librosa.sequence.dtw(X=pianoroll,
                                     Y=audio_features,
                                     metric='cosine',
@@ -105,8 +127,3 @@ def audio_to_score_alignment(misaligned, audio_path, res):
     new_offs = np.interp(misaligned[:, 2], path[:, 0], path[:, 1])
 
     return new_ons, new_offs
-
-
-if __name__ == "__main__":
-    wav_data = tf.gfile.Open(sys.argv[1], 'rb').read()
-    transcription(wav_data)

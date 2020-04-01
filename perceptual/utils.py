@@ -225,8 +225,19 @@ def make_pianoroll(mat,
 
         # the ending part
         if start + (basis - 1) * basis_l < end:
-            pr[pitch, basis - 1, start + (basis-1)*basis_l:end] = vel
+            pr[pitch, basis - 1, start + (basis - 1) * basis_l:end] = vel
 
     # collapse pitch and basis dimension
     pr = pr.reshape((128 * basis, -1), order='C')
     return pr
+
+
+def stretch_pianoroll(pr, out_length):
+    """
+    Stretch a pianoroll along the second dimension.
+    """
+    ratio = pr.shape[1] / out_length
+    return np.array(
+        list(
+            map(lambda i: pr[:, min(round(i * ratio), pr.shape[1] - 1)],
+                range(out_length)))).T

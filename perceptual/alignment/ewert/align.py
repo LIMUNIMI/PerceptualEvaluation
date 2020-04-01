@@ -1,10 +1,11 @@
 import numpy as np
-from utils.utils import take_closest_sorted
 import pretty_midi
 from math import floor, log2
 import librosa
 import librosa.display
 from .dlnco.DLNCO import dlnco
+import os
+import essentia.standard as esst
 
 
 def multiple_audio_alignment(audio1,
@@ -111,7 +112,15 @@ def audio_to_midi_alignment(midi,
 
     """
     # print("Synthesizing MIDI")
-    audio1 = midi.fluidsynth(fs=sr, sf2_path=sf2_path)
+    fname = str(os.getpid())
+    midi.write(fname+".mid")
+    os.system(
+        f"fluidsynth -ni Arachno\\ SoundFont\\ -\\ Version\\ 1.0.sf2 {fname}.mid -F {fname}.wav -r {sr} > /dev/null 2>&1"
+    )
+    audio1 = esst.EasyLoader(filename=fname+".wav", sampleRate=sr)()
+    os.remove(fname+".mid")
+    os.remove(fname+".wav")
+
     audio2 = audio
     # print("Starting alignment")
     wp = multiple_audio_alignment(audio1, sr, audio2, sr, hopsize, n_fft=n_fft)
@@ -124,7 +133,7 @@ def audio_to_midi_alignment(midi,
 def audio_to_score_alignment(mat,
                              audio,
                              sr,
-                             time_precision=0.02,
+                             res=0.02,
                              n_fft=4096,
                              merge_dlnco=True,
                              sf2_path=None):
@@ -184,7 +193,7 @@ def audio_to_score_alignment(mat,
             pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
 
     # aligning midi to audio
-    hopsize = 2**floor(log2(sr * time_precision))
+    hopsize = 2**floor(log2(sr * res))
     mapping_times = audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft,
                                             merge_dlnco, sf2_path)
 
