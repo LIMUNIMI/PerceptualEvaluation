@@ -38,6 +38,7 @@ def path_processing(i, data):
     err = np.empty((2*err_ons.shape[0],))
     err[::2] = err_ons
     err[1::2] = err_offs
+    del gt, mat, audio, new_ons, new_offs
     # print(
     #     f"{np.mean(err_ons):.2E}, {np.mean(err_offs):.2E}" +
     #     f", {np.std(err_ons):.2E}, {np.std(err_offs):.2E}")
@@ -47,7 +48,7 @@ def path_processing(i, data):
 if __name__ == "__main__":
     data = audioscoredataset.Dataset()
     data.filter(datasets=["SMD"])
-    errors = data.parallel(path_processing, n_jobs=-2)
+    errors = data.parallel(path_processing, n_jobs=1)
 
     with open(FNAME, "w", newline="") as f:
         writer = csv.writer(f)

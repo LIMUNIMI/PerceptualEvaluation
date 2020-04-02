@@ -71,6 +71,7 @@ def multiple_audio_alignment(audio1,
     D, wp = librosa.sequence.dtw(X=audio1_merge,
                                  Y=audio2_merge,
                                  metric='cosine')  # D (153, 307)
+    del D
     return wp
 
 
