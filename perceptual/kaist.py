@@ -8,11 +8,18 @@ import essentia as es
 from .utils import make_pianoroll, find_start_stop, midipath2mat
 from .utils import stretch_pianoroll
 import pickle
+import gzip
+import torch
 from torch import nn
+from asmd import audioscoredataset
+import numpy as np
 
+MINI_SPEC_PATH = 'mini_specs.pkl.gzip'
+MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
+NJOBS = 2
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -28,10 +35,11 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 def transcribe(audio,
                score,
                data,
-               velocity_model,
+               velocity_model=None,
                res=0.02,
                sr=SR,
-               align=True):
+               align=True,
+               pickle_mini_spec=False):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
     Align them and perform NMF with default templates.
@@ -113,18 +121,32 @@ def transcribe(audio,
     npitch = maxpitch - minpitch + 1
     initH = initH.reshape(npitch, BASIS, -1)
     initW = initH.reshape((-1, npitch, BASIS), order='C')
+    mini_specs = []
     for note in score:
+        mini_spec = np.zeros(initW.shape[0], MINI_SPEC_SIZE)
         start = int((note[1] - 0.05) * res)
         end = int((note[2] + 0.05) * res) + 1
-        mini_spec = initW[:, note[0] - minpitch, :] *\
+        _mini_spec = initW[:, note[0] - minpitch, :] *\
             initH[note[0] - minpitch, :, start:end]
+        m = np.argmax(np.sum(_mini_spec, axis=0))
+        start = m - MINI_SPEC_SIZE // 2
+        if start < 0:
+            begin_pad = -start
+            start = 0
+        end = min(m + MINI_SPEC_SIZE // 2 + 1, _mini_spec.shape[1])
+        mini_spec[:, begin_pad:] += _mini_spec[:, start:end]
+        if pickle_mini_spec:
+            mini_specs.append(mini_spec)
+        else:
+            # numpy to torch and add batch dimension
+            mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
+            vel = velocity_model(mini_spec)
+            note[3] = vel.cpu().value
 
-        # numpy to torch and add batch dimension
-        # mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
-        vel = velocity_model(mini_spec)
-        note[3] = vel.cpu().value
-
-    return score, V, initW, initH
+    if pickle_mini_spec:
+        return mini_specs
+    else:
+        return score, V, initW, initH
 
 
 def build_model(spec_size):
@@ -154,12 +176,36 @@ def transcribe_from_paths(audio_path,
     # write midi
 
 
+def transcribe_from_index_list(fname, data, pickle_mini_specs):
+    datasets, indices = pickle.load(open(fname, "rb"))
+    training, validation, test = indices
+    dataset = audioscoredataset.Dataset().filter(datasets=datasets)
+    dataset.paths = dataset.paths[training]
+
+    def processing(i, dataset, data, pickle_mini_specs):
+        audio = dataset.get_mix(i, sr=SR)
+        score = dataset.get_score(i, score_type=['non_aligned'])
+        return transcribe(
+            audio, score, data, pickle_mini_specs=pickle_mini_specs)
+
+    mini_specs = dataset.parallel(
+        processing, data, pickle_mini_specs, n_jobs=NJOBS)
+    mini_specs = [i for j in mini_specs for i in j]
+    pickle.dump(gzip.open(MINI_SPEC_PATH, 'wb'))
+
+
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 3:
         print(
-            f"Usage: {sys.argv[0]} [audio_path], [midi_score_path] [midi_output_path]"
+            f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
         )
+        print(
+            f"Usage: {sys.argv[0]} create_mini_specs [list_of_files_in_training_set]"
+        )
+    elif sys.argv[1] == 'create_mini_specs':
+        data = pickle.load(open(TEMPLATE_PATH, 'rb'))
+        transcribe_from_index_list(sys.argv[2], data, pickle_mini_specs=True)
     else:
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         velocity_model = build_model((data[0].shape[0], BASIS))
