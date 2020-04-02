@@ -68,7 +68,7 @@ _________
 #. Install fluidsynth and download SalamanderGrandPiano soundfont in sf2 format
    from our mega_ folder and put it in your working dir
 #. run ``python -m perceptual.alignment.dtw_tuning`` to check the DTW tuning in
-   midi2midi over `MusicNet` solo piano songs
+   midi2midi over ``MusicNet`` solo piano songs
 #. run ``python -m perceptual.alignment.align amt`` to perform our amt-based
    alignment over SMD dataset
 #. run ``python -m perceptual.alignment.align ewert`` to perform our baseline
@@ -80,6 +80,9 @@ Transcription
 _____________
 
 #. Download our pretrained vienna model on Maestro and put it in your working dir from our mega_
+#. If you want, regenerate the maestro splits by running ``poetry run python -m
+   perceptual.maestro_split_indices``
+#. Train our proposed model:
 
 To run the objective evaluation use
 
