@@ -7,14 +7,14 @@ import numpy as np
 
 from asmd import audioscoredataset
 if len(sys.argv) < 1:
-    print("Error: missing algorithm, provie `ewert` or `amt`")
+    print("Error: missing algorithm, add `ewert` or `amt`")
     sys.exit(2)
 if sys.argv[1] == "ewert":
     from .ewert.align import audio_to_score_alignment
-    FNAME = "ewert.csv"
+    FNAME = "results/ewert.csv"
 elif sys.argv[1] == "amt":
     from .align_with_amt import audio_to_score_alignment
-    FNAME = "amt.csv"
+    FNAME = "results/amt.csv"
 else:
     print("Error: missing algorithm, provie `ewert` or `amt`")
     sys.exit(3)
@@ -46,9 +46,8 @@ def path_processing(i, data):
 
 
 if __name__ == "__main__":
-    data = audioscoredataset.Dataset()
-    data.filter(datasets=["SMD"])
-    errors = data.parallel(path_processing, n_jobs=1)
+    data = audioscoredataset.Dataset().filter(datasets=['SMD'])
+    errors = data.parallel(path_processing, n_jobs=2)
 
     with open(FNAME, "w", newline="") as f:
         writer = csv.writer(f)

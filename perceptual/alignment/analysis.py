@@ -29,7 +29,9 @@ def analyze(files, target, names):
         start = 0
         step = 1
     else:
-        raise Exception("Please, provide a valid target type for the analysis: 'onsets', 'offsets' or 'both'")
+        raise Exception(
+            "Please, provide a valid target type for the analysis: 'onsets', 'offsets' or 'both'"
+        )
 
     target = []
     for file in files:
@@ -40,7 +42,7 @@ def analyze(files, target, names):
     for i in range(len(target)):
         target[i] = np.abs(target[i][~np.isnan(target[i])])
 
-    thresholds = np.arange(0, END, END/100)
+    thresholds = np.arange(0, END, END / 100)
     values = pd.DataFrame()
     for i, file in enumerate(target):
         values_th = []
@@ -48,19 +50,23 @@ def analyze(files, target, names):
             if target == 'both':
                 ons_idx = np.argwhere(file[::2] <= th)
                 offs_idx = np.argwhere(file[1::2] <= th)
-                values_th.append(2 * np.count_nonzero(ons_idx == offs_idx) / len(file))
+                values_th.append(2 * np.count_nonzero(ons_idx == offs_idx) /
+                                 len(file))
             else:
-                values_th.append(len(file[file <= th])/len(file))
+                values_th.append(len(file[file <= th]) / len(file))
         values[names[i]] = values_th
     values.index = thresholds
 
     return values
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Analyze csv files and plot precision of alignments over threshold')
-    parser.add_argument('infile', nargs='*',
-                        type=argparse.FileType('rt'), default=sys.stdin,
+    parser.add_argument('infile',
+                        nargs='*',
+                        type=argparse.FileType('rt'),
+                        default=sys.stdin,
                         help="Files that will be analyzed")
     if len(sys.argv) < 2:
         parser.print_help()
@@ -80,22 +86,23 @@ if __name__ == '__main__':
                 'offs': values_offs,
                 'both': values_both
             },
-            axis=1
-        )
+            axis=1)
         th = df.index
         th.values[-1] = END
-        df= df.melt()
-        df = df.rename(
-            columns={
-                'variable_0': 'Type',
-                'variable_1': 'Method',
-                'value': '% matches'
-            }
-        )
-        df['Time (s)'] = np.hstack([th.values for i in range(len(files)*3)])
+        df = df.melt()
+        df = df.rename(columns={
+            'variable_0': 'Type',
+            'variable_1': 'Method',
+            'value': '% matches'
+        })
+        df['Time (s)'] = np.hstack([th.values for i in range(len(files) * 3)])
 
-        fig = px.line(df, x='Time (s)', y='% matches', facet_col='Type', color='Method')
+        fig = px.line(df,
+                      x='Time (s)',
+                      y='% matches',
+                      facet_col='Type',
+                      color='Method')
         # fig.update_layout(yaxis_tickformat='%', yaxis={'dtick':0.05}, xaxis={'dtick':0.5})
         fig.update_yaxes(dtick=0.05, tickformat='%')
-        fig.update_xaxes(dtick=END/10)
+        fig.update_xaxes(dtick=END / 10)
         fig.show()

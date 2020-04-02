@@ -62,12 +62,24 @@ Build tests
 Objective evaluation
 --------------------
 
-Preparation
-___________
+Alignment
+_________
 
-#. Install fluidsynth and download and uncompress Arachno soundfont in your
-working directory
-#. Download our pretrained vienna model on Maestro
+#. Install fluidsynth and download SalamanderGrandPiano soundfont in sf2 format
+   from our mega_ folder and put it in your working dir
+#. run ``python -m perceptual.alignment.dtw_tuning`` to check the DTW tuning in
+   midi2midi over `MusicNet` solo piano songs
+#. run ``python -m perceptual.alignment.align amt`` to perform our amt-based
+   alignment over SMD dataset
+#. run ``python -m perceptual.alignment.align ewert`` to perform our baseline
+   alignment over SMD dataset
+#. run ``python -m perceptual.alignment.analysis results/ewert.csv
+   results/amt.csv`` to plot the results of alignment
+
+Transcription
+_____________
+
+#. Download our pretrained vienna model on Maestro and put it in your working dir from our mega_
 
 To run the objective evaluation use
 
@@ -81,6 +93,7 @@ To compare with subjective evaluation, store percptual test results in
 This will create csv files in ``results`` directory.
 
 To plot them use ``poetry run python -m perceptual.plots``.
+
 
 Perceptual tests
 ================
@@ -232,3 +245,5 @@ Each score can be computed with the *“Absolute Category Rating with
 Hidden Reference”* (ACR-HR): score - score_hr + 6
 
 This poll wants to answer to question 4.
+
+.. _mega: https://mega.nz/folder/KVExwayZ#TrXTvHleVhzBfBXt0FaOAA

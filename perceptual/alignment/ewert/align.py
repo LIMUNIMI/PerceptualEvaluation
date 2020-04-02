@@ -116,7 +116,7 @@ def audio_to_midi_alignment(midi,
     fname = str(os.getpid())
     midi.write(fname+".mid")
     os.system(
-        f"fluidsynth -ni Arachno\\ SoundFont\\ -\\ Version\\ 1.0.sf2 {fname}.mid -F {fname}.wav -r {sr} > /dev/null 2>&1"
+        f"fluidsynth -ni SalamanderGrandPianoV3Retuned-renormalized.sf2 {fname}.mid -F {fname}.wav -r {sr} > /dev/null 2>&1"
     )
     audio1 = esst.EasyLoader(filename=fname+".wav", sampleRate=sr)()
     os.remove(fname+".mid")

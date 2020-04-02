@@ -11,7 +11,7 @@ DISTS = [
     'euclidean', 'cosine', 'canberra', 'chebyshev', 'braycurtis',
     'correlation', 'manhattan'
 ]
-RADIUS = [1.00, 0.75, 0.66, 0.5, 0.33, 0.25, 0.10]
+RADIUS = [1.00, 0.75, 0.5]
 RES = 0.02
 
 
@@ -59,9 +59,9 @@ def main():
                                     n_jobs=N_JOBS,
                                     backend="multiprocessing")
             # removing Nones...
-            l1 = len(data)
-            data = [i for i in data if i is not None]
-            num_none = len(data) - l1
+            # l1 = len(data)
+            # data = [i for i in data if i is not None]
+            # num_none = len(data) - l1
 
             # logging!
             m = log(data)
@@ -73,9 +73,10 @@ def main():
 
             fname = os.path.join('results', f'dtw-{dist}-{radius:.2f}.pkl')
             pickle.dump({
-                'num_none': num_none,
+                # 'num_none': num_none,
                 'data': data
             }, open(fname, 'wb'))
+            del data
 
     print(
         f"Best parameters for midi2midi over piano are (dist, radius): {best_params}"
@@ -83,12 +84,12 @@ def main():
 
 
 def log(data):
-    data = np.array(data)
-    m1 = np.mean(data[:, 0])
-    s1 = np.std(data[:, 0])
+    data = np.hstack(data)
+    m1 = np.mean(data[0])
+    s1 = np.std(data[0])
     print(f'Error ons (avg, std): {m1:.4E}, {s1:.4E}')
-    m2 = np.mean(data[:, 1])
-    s2 = np.std(data[:, 1])
+    m2 = np.mean(data[1])
+    s2 = np.std(data[1])
     print(f'Error offs (avg, std): {m2:.4E}, {s2:.4E}')
     m3 = np.mean(data)
     s3 = np.std(data)
