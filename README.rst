@@ -19,7 +19,7 @@ Environment
 #. ``poetry install``
 
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from ``asmd``
-package: 
+package:
 
     ``poetry run python -m asmd.install``
 
@@ -49,7 +49,7 @@ Chose vsts
 #. Build scales: ``poetry run python -m perceptual.midi_test_creation``
 #. Synthesize scales and chosen excerpts with vsts. You can download our
    synthesized midis from [url]; extract them in the ``excerpts`` directory.
-#. Analyze scales and chosen excerpts: 
+#. Analyze scales and chosen excerpts:
    ``poetry run python -m perceptual.vst_search``
 
 This will copy the excerpts relative to the chosen vsts to the folder ``chosen``.
@@ -67,28 +67,31 @@ _________
 
 #. Install fluidsynth and download SalamanderGrandPiano soundfont in sf2 format
    from our mega_ folder and put it in your working dir
-#. run ``python -m perceptual.alignment.dtw_tuning`` to check the DTW tuning in
-   midi2midi over ``MusicNet`` solo piano songs
-#. run ``python -m perceptual.alignment.align amt`` to perform our amt-based
-   alignment over SMD dataset
-#. run ``python -m perceptual.alignment.align ewert`` to perform our baseline
-   alignment over SMD dataset
-#. run ``python -m perceptual.alignment.analysis results/ewert.csv
+#. run ``poetry run python -m perceptual.alignment.dtw_tuning`` to check the
+   FastDTW tuning in midi2midi over ``MusicNet`` solo piano songs
+#. run ``poetry run python -m perceptual.alignment.align amt`` to perform our
+   amt-based alignment over SMD dataset with the best parameters found in the
+   previous step
+#. run ``poetry run python -m perceptual.alignment.align ewert`` to perform our
+   baseline alignment over SMD dataset
+#. run ``poetry run python -m perceptual.alignment.analysis results/ewert.csv
    results/amt.csv`` to plot the results of alignment
 
 Transcription
 _____________
 
 #. Download our pretrained vienna model on Maestro and put it in your working dir from our mega_
-#. If you want, regenerate the maestro splits by running ``poetry run python -m
-   perceptual.maestro_split_indices``
 #. Train our proposed model:
+    #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
+           the dataset of mini_specs or download it from out mega_
+    #. ``poetry run python -m perceptual.proposed train`` to train our model
+           for velocity estimation
 
 To run the objective evaluation use
 
     ``poetry run python -m perceptual.objective_eval``
 
-To compare with subjective evaluation, store percptual test results in
+To compare with subjective evaluation, store perceptual test results in
 ``results`` directory with name ``perceptual.csv`` and run
 
     ``poetry run python -m perceptual.compare_eval``
@@ -104,24 +107,24 @@ Perceptual tests
 Introduction: dictionary and principles
 ---------------------------------------
 
-Dictionary to the purpose of this text: 
+Dictionary to the purpose of this text:
 
 #. *interpretation*: the symbolic idea about how a music piece should be
-   performed: that is, the ideal performance that the player wants to achieve 
+   performed: that is, the ideal performance that the player wants to achieve
 #. *performance*: the pyhisical act of playing a music piece: that is, the set
    of movements through which the musician realizes the *interpretation*, which
    changes depending on the context (piano, room, environmnet)
 
 The listening tests are based on the following principles that are
-supposed to be true: 
+supposed to be true:
 
 #. All musicians have a target *interpretation*, that is, an idea of the target
    sound (at least at professional levels)
-#. The MIDI is able to record all the characteristics of a piano *performance* 
+#. The MIDI is able to record all the characteristics of a piano *performance*
 #. (reformulation of the above) a musician will change its way of playing
    according to the context (room, environment, piano), that is: using the same
    *interpretation*, a musician will create different *performances* if the
-   context changes 
+   context changes
 #. during the audio recording process, some information is lost and some other
    is introduced, due to the context (including microphones). Consequently, it
    is not possible to extract the exact MIDI *performance* from the audio
@@ -175,12 +178,12 @@ examples [to be done].
 -  simple explanation of how microphones and environment change the
    sound.
 
-Examples: 
+Examples:
 
 - same performer in different concerts (same interpretation, different
-  performance) 
+  performance)
 - same performer with different interpretations (same condition, different
-  interpretation - and performance) 
+  interpretation - and performance)
 - different performers in different concerts (different interpretations,
   different conditions - and performances)
 
@@ -190,7 +193,7 @@ Question type 1
 ::
 
    Listen to this target audio recording: [original audio]
-   For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio? 
+   For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio?
    Note that these are different performances because the piano, the microphones, and the environment changed.
    [possible answers: scale 1 to 6]
    - original midi recording resynthesized with instrument 3 (hidden reference)
@@ -212,7 +215,7 @@ Question type 2
 ::
 
    Listen to this target audio recording: [exact performance resynthesized with instrument 1]
-   For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio? 
+   For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio?
    Note that these are different performances because the piano, the microphones, and the environment changed.
    [possible answers: scale 1 to 6]
    - original midi recording resynthesized with instrument 2 (hidden reference)

@@ -8,9 +8,10 @@ from magenta.models.onsets_frames_transcription import train_util
 from magenta.music.protobuf import music_pb2
 import os
 import logging
-import librosa
+import fastdtw
 import numpy as np
 from .. import utils
+from . import cdist
 
 # suppress tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # FATAL
@@ -35,19 +36,28 @@ def google_sucks(samples, sr):
     return samples
 
 
-def transcription(audio, sr, res=0.02):
+def _my_prep_inputs(x, y, dist):
+    """
+    Fastdtw sucks too and convicts you to use float64...
+    """
+    return x, y
+
+
+def transcription(audio, sr, res=0.02, cuda=False):
     """
     Google sucks and want to use audio path (raw wav) instead of decoded
     samples loosing in decoupling between file format and DSP
     """
 
-    # simple hack because google hacks... in this way we cna accept audio data already loaded
+    # simple hack because google sucks... in this way we can accept audio data
+    # already loaded and mantain our reasonable interface (and decouple i/o
+    # from processing)
     original_google_sucks = audio_io.wav_data_to_samples
     audio_io.wav_data_to_samples = google_sucks
     audio = np.array(audio)
     config = configs.CONFIG_MAP['onsets_frames']
     hparams = config.hparams
-    hparams.use_cudnn = False
+    hparams.use_cudnn = cuda
     hparams.batch_size = 1
     examples = tf.placeholder(tf.string, [None])
 
@@ -111,16 +121,16 @@ def transcription(audio, sr, res=0.02):
 
 def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
     audio_features = transcription(audio, sr, res) + EPS
-
-    # parameters for dtw were chosen with midi2midi on musicnet (see dtw_test
-    # in biseqnet)
     pianoroll = utils.make_pianoroll(misaligned, res=res) + EPS
-    _D, path = librosa.sequence.dtw(X=pianoroll,
-                                    Y=audio_features,
-                                    metric='cosine',
-                                    global_constraints=True,
-                                    band_rad=0.66)
-    path = path[::-1] * res
+
+    # parameters for dtw were chosen with midi2midi on musicnet (see dtw_tuning)
+    # hack to let fastdtw accept float32
+    fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
+    _D, path = fastdtw.fastdtw(pianoroll.astype(np.float32).T,
+                               audio_features.astype(np.float32).T,
+                               dist=cdist.braycurtis,
+                               radius=1)
+    path = np.array(path) * res
 
     # interpolating
     new_ons = np.interp(misaligned[:, 1], path[:, 0], path[:, 1])

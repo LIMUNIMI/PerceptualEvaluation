@@ -201,7 +201,7 @@ def make_pianoroll(mat,
         pitch = int(note[0])
         vel = int(note[3])
         start = int(np.round(note[1] / res))
-        end = int(np.round(note[2] / res)) + 1
+        end = min(L - 1, int(np.round(note[2] / res)) + 1)
         if velocities:
             vel = max(1, vel)
         else:

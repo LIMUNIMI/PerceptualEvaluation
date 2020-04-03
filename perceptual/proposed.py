@@ -8,7 +8,7 @@ import essentia as es
 from .utils import make_pianoroll, find_start_stop, midipath2mat
 from .utils import stretch_pianoroll
 import pickle
-import gzip
+import lzma
 import torch
 from torch import nn
 from asmd import audioscoredataset
@@ -16,13 +16,16 @@ import numpy as np
 import sys
 from .maestro_split_indices import maestro_splits
 import pretty_midi
+import random
 
-MINI_SPEC_PATH = 'mini_specs.pkl.gzip'
+MINI_SPEC_PATH = 'mini_specs.pkl.xz'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
-NJOBS = 2
+NJOBS = 4
+EPS_ACTIVATIONS = 1e-4
+NUM_SONGS_FOR_TRAINING = 20
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -58,6 +61,7 @@ def transcribe(audio,
 
     """
     initW, minpitch, maxpitch = data
+    initW = copy(initW)
     score = copy(score)
     if align:
         # align score
@@ -97,47 +101,48 @@ def transcribe(audio,
 
     initW = initW[:, minpitch * BASIS:(maxpitch + 1) * BASIS]
     initH = initH[minpitch * BASIS:(maxpitch + 1) * BASIS, :]
-
-    params = {'Mh': copy(initH), 'Mw': copy(initW)}
+    initH[initH == 0] = EPS_ACTIVATIONS
 
     # perform nfm
-    NMF(V,
-        initW,
-        initH,
-        params=params,
-        B=BASIS,
-        num_iter=20,
-        cost_func=COST_FUNC)
+    NMF(V, initW, initH, B=BASIS, num_iter=10, cost_func=COST_FUNC)
 
-    params['a3'] = 0
-    NMF(V,
-        initW,
-        initH,
-        params=params,
-        B=BASIS,
-        num_iter=2,
-        cost_func=COST_FUNC,
-        fixW=True)
+    NMF(V, initW, initH, B=BASIS, num_iter=2, cost_func=COST_FUNC, fixW=True)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
+    mini_specs = []
     npitch = maxpitch - minpitch + 1
     initH = initH.reshape(npitch, BASIS, -1)
-    initW = initH.reshape((-1, npitch, BASIS), order='C')
-    mini_specs = []
+    initW = initW.reshape((-1, npitch, BASIS), order='C')
     for note in score:
-        mini_spec = np.zeros(initW.shape[0], MINI_SPEC_SIZE)
-        start = int((note[1] - 0.05) * res)
-        end = int((note[2] + 0.05) * res) + 1
-        _mini_spec = initW[:, note[0] - minpitch, :] *\
-            initH[note[0] - minpitch, :, start:end]
+        # extract mini-spectrogram
+        mini_spec = np.zeros((initW.shape[0], MINI_SPEC_SIZE))
+        start = max(0, int((note[1] - 0.05) / res))
+        end = min(initH.shape[2], int((note[2] + 0.05) / res) + 1)
+        if end - start <= 1:
+            mini_specs.append(None)
+            continue
+        _mini_spec = initW[:, int(note[0] - minpitch), :] @\
+            initH[int(note[0] - minpitch), :, start:end]
+
+        # looking for the frame with maximum energy (MEF)
         m = np.argmax(np.sum(_mini_spec, axis=0))
+
+        # segment the window so that the position of the MEF is significant in
+        # the input mini-spec
         start = m - MINI_SPEC_SIZE // 2
         if start < 0:
             begin_pad = -start
             start = 0
+        else:
+            begin_pad = 0
         end = min(m + MINI_SPEC_SIZE // 2 + 1, _mini_spec.shape[1])
-        mini_spec[:, begin_pad:] += _mini_spec[:, start:end]
+        end_pad = end - start + begin_pad
+        if end_pad > MINI_SPEC_SIZE:
+            end = end - (end_pad - MINI_SPEC_SIZE)
+            end_pad = MINI_SPEC_SIZE
+        mini_spec[:, begin_pad:end_pad] += _mini_spec[:, start:end]
+
         if return_mini_specs:
             mini_specs.append(mini_spec)
         else:
@@ -145,7 +150,6 @@ def transcribe(audio,
             mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
             vel = velocity_model(mini_spec)
             note[3] = vel.cpu().value
-
     if return_mini_specs:
         return mini_specs
     else:
@@ -188,6 +192,14 @@ def transcribe_from_paths(audio_path,
     return new_score
 
 
+def processing(i, dataset, data):
+    audio, sr = dataset.get_mix(i, sr=SR)
+    score = dataset.get_score(i, score_type=['non_aligned'])
+    velocities = dataset.get_score(i, score_type=['precise_alignment'])[:, 3]
+    return transcribe(audio, score, data,
+                      return_mini_specs=True), velocities.tolist()
+
+
 def create_mini_specs(data):
     """
     Perform alignment and NMF but not velocity estimation; instead, saves all
@@ -195,27 +207,35 @@ def create_mini_specs(data):
     """
     train, validation, test = maestro_splits()
     dataset = audioscoredataset.Dataset().filter(datasets=["Maestro"])
-    dataset.paths = dataset.paths[train]
+    random.seed(1750)
+    train = random.sample(train, NUM_SONGS_FOR_TRAINING)
+    dataset.paths = np.array(dataset.paths)[train].tolist()
 
-    def processing(i, dataset, data):
-        audio = dataset.get_mix(i, sr=SR)
-        score = dataset.get_score(i, score_type=['non_aligned'])
-        return transcribe(
-            audio, score, data, return_mini_specs=True)
+    data = dataset.parallel(processing, data, n_jobs=NJOBS)
 
-    mini_specs = dataset.parallel(
-        processing, data, n_jobs=NJOBS)
-    mini_specs = [i for j in mini_specs for i in j]
-    pickle.dump(gzip.open(MINI_SPEC_PATH, 'wb'))
+    mini_specs, velocities = [], []
+    for d in data:
+        specs, vels = d
+        # removing nones
+        for i in range(len(specs)):
+            spec = specs[i]
+            if spec is not None:
+                mini_specs.append(spec)
+                velocities.append(vels[i])
+        mini_specs += specs
+        velocities += vels
+
+    pickle.dump((mini_specs, velocities), lzma.open(MINI_SPEC_PATH, 'wb'))
+    print(
+        f"number of (inputs, targets) in training set: {len(mini_specs)}, {len(velocities)}"
+    )
 
 
 def show_usage():
     print(
         f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
     )
-    print(
-        f"Usage: {sys.argv[0]} create_mini_specs"
-    )
+    print(f"Usage: {sys.argv[0]} create_mini_specs")
 
 
 if __name__ == '__main__':
