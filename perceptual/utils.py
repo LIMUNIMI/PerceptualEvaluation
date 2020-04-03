@@ -4,6 +4,7 @@ from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
 import essentia.standard as es
 
+
 PLOT = False
 
 
@@ -195,7 +196,8 @@ def make_pianoroll(mat,
 
     pr = np.zeros((128, basis, L))
 
-    for note in mat:
+    for i in range(mat.shape[0]):
+        note = mat[i]
         pitch = int(note[0])
         vel = int(note[3])
         start = int(np.round(note[1] / res))
@@ -212,7 +214,7 @@ def make_pianoroll(mat,
 
         # all the other basis
         END = False
-        for b in range(basis):
+        for b in range(1, basis):
             for k in range(basis_l):
                 t = start + b * basis_l + k
                 if t < end:

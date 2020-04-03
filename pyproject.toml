@@ -14,6 +14,7 @@ joblib = "^0.14.1"
 # asmd = "^0.1.1"
 pretty_midi = "^0.2.8"
 magenta = "^1.2.2"
+fastdtw = "^0.3.4"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"

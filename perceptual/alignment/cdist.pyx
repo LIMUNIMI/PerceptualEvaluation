@@ -1,5 +1,7 @@
+# cython: language_level=3
+# cython: boundscheck=False
 """
-Fast computation of distances with float32 and cython. Distancs matrix computed
+Fast computation of distances with float32 and cython. Distance matrix computed
 with thread parallelization!
 """
 import numpy as np
@@ -7,6 +9,7 @@ cimport cython
 from cython.parallel cimport prange
 from libc.math cimport sqrt
 from libc.math cimport fabs
+# from libc.stdlib cimport abs as iabs
 
 
 cdef float eps = 1e-15
@@ -38,30 +41,41 @@ cdef float mean(float[:] A) nogil:
 
     return out / len(A)
 
-cdef float cosine_distance(float[:] A, float[:] B) nogil:
+cdef float ccosine(float[:] A, float[:] B) nogil:
     return 1 - dot(A, B) / (norm(A) * norm(B))
 
-cdef float hamming(float[:] A, float[:] B) nogil:
+def cosine(A, B):
+    return ccosine(A, B)
+
+cdef float chamming(float[:] A, float[:] B) nogil:
     cdef float out = 0
     for i in range(len(A)):
         if A[i] != B[i]:
             out += 1
     return out
 
-cdef float normalized_minkowski(float[:] A, float[:] B, float p) nogil:
+def hamming(A, B):
+    return chamming(A, B)
+
+cdef float cminkowski(float[:] A, float[:] B, float p) nogil:
     cdef float out = 0
     cdef float normA = 0
     cdef float normB = 0
     for i in range(len(A)):
         out += fabs(A[i] - B[i])**p
-        normA += fabs(A[i])**p
-        normB += fabs(B[i])**p
-    normA = normA ** (1.0/p) + eps
-    normB = normB ** (1.0/p) + eps
-    return out**(1.0/p) / max(normA, normB)
+    return out**(1.0/p)
     # return out**(1.0/p)
 
-cdef float braycurtis(float[:] A, float[:] B) nogil:
+def minkowski(A, B, p):
+    return cminkowski(A, B, p)
+
+def euclidean(A, B):
+    return cminkowski(A, B, 2)
+
+def manhattan(A, B):
+    return cminkowski(A, B, 1)
+
+cdef float cbraycurtis(float[:] A, float[:] B) nogil:
     cdef float num = 0
     cdef float den = 0
 
@@ -71,7 +85,10 @@ cdef float braycurtis(float[:] A, float[:] B) nogil:
 
     return num/(den + eps)
 
-cdef float canberra(float[:] A, float[:] B) nogil:
+def braycurtis(A, B):
+    return cbraycurtis(A, B)
+
+cdef float ccanberra(float[:] A, float[:] B) nogil:
     cdef float out = 0
 
     for i in range(len(A)):
@@ -79,7 +96,10 @@ cdef float canberra(float[:] A, float[:] B) nogil:
 
     return out
 
-cdef float chebyshev(float[:] A, float[:] B) nogil:
+def canberra(A, B):
+    return ccanberra(A, B)
+
+cdef float cchebyshev(float[:] A, float[:] B) nogil:
     cdef float out = -1
 
     for i in range(len(A)):
@@ -87,13 +107,18 @@ cdef float chebyshev(float[:] A, float[:] B) nogil:
 
     return out
 
-cdef float correlation(float[:] A, float[:] B) nogil:
+def chebyshev(A, B):
+    return cchebyshev(A, B)
+
+cdef float ccorrelation(float[:] A, float[:] B) nogil:
     A = sub(A, mean(A))
     B = sub(B, mean(B))
-    return cosine_distance(A, B)
+    return ccosine(A, B)
 
+def correlation(A, B):
+    return ccorrelation(A, B)
 
-def cdist(float[:, :] A, float[:, :] B, str metric='cosine', float p=1):
+def cdist(float[:, :] A, float[:, :] B, str metric='euclidean', float p=1):
     """
     Compute distance matrix with parallel threading (without GIL).
 
@@ -108,6 +133,8 @@ def cdist(float[:, :] A, float[:, :] B, str metric='cosine', float p=1):
         Available metrics:
         - 'cosine' : 1 - cosine similarity
         - 'minkowski' : minkowski normalized to 1
+        - 'manhattan' : minkowski with p = 1
+        - 'euclidean' : minkowski with p = 2
         - 'hamming' : number of different entries
         - 'braycurtis' : bray-curtis distance
         - 'canberra' : canberra distance
@@ -119,7 +146,7 @@ def cdist(float[:, :] A, float[:, :] B, str metric='cosine', float p=1):
     Returns
     ---
     * array of array :
-        shape: (A.shape[0], B.shape[0])
+        shape: (A.shape[1], B.shape[1])
     """
     cdef int a_cols = A.shape[1]
     cdef int b_cols = B.shape[1]
@@ -130,18 +157,22 @@ def cdist(float[:, :] A, float[:, :] B, str metric='cosine', float p=1):
     for i in prange(a_cols, nogil=True):
         for j in range(b_cols):
             if metric == 'cosine':
-                out[i, j] = cosine_distance(A[:, i], B[:, j])
+                out[i, j] = ccosine(A[:, i], B[:, j])
             elif metric == 'hamming':
-                out[i, j] = hamming(A[:, i], B[:, j])
+                out[i, j] = chamming(A[:, i], B[:, j])
+            elif metric == 'manhattan':
+                out[i, j] = cminkowski(A[:, i], B[:, j], 1)
+            elif metric == 'euclidean':
+                out[i, j] = cminkowski(A[:, i], B[:, j], 2)
             elif metric == 'minkowski':
-                out[i, j] = normalized_minkowski(A[:, i], B[:, j], p)
+                out[i, j] = cminkowski(A[:, i], B[:, j], p)
             elif metric == 'braycurtis':
-                out[i, j] = braycurtis(A[:, i], B[:, j])
+                out[i, j] = cbraycurtis(A[:, i], B[:, j])
             elif metric == 'canberra':
-                out[i, j] = canberra(A[:, i], B[:, j])
+                out[i, j] = ccanberra(A[:, i], B[:, j])
             elif metric == 'chebyshev':
-                out[i, j] = chebyshev(A[:, i], B[:, j])
+                out[i, j] = cchebyshev(A[:, i], B[:, j])
             elif metric == 'correlation':
-                out[i, j] = correlation(A[:, i], B[:, j])
+                out[i, j] = ccorrelation(A[:, i], B[:, j])
 
     return out

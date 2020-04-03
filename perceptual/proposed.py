@@ -13,6 +13,9 @@ import torch
 from torch import nn
 from asmd import audioscoredataset
 import numpy as np
+import sys
+from .maestro_split_indices import maestro_splits
+import pretty_midi
 
 MINI_SPEC_PATH = 'mini_specs.pkl.gzip'
 MINI_SPEC_SIZE = 20
@@ -39,7 +42,7 @@ def transcribe(audio,
                res=0.02,
                sr=SR,
                align=True,
-               pickle_mini_spec=False):
+               return_mini_specs=False):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
     Align them and perform NMF with default templates.
@@ -135,7 +138,7 @@ def transcribe(audio,
             start = 0
         end = min(m + MINI_SPEC_SIZE // 2 + 1, _mini_spec.shape[1])
         mini_spec[:, begin_pad:] += _mini_spec[:, start:end]
-        if pickle_mini_spec:
+        if return_mini_specs:
             mini_specs.append(mini_spec)
         else:
             # numpy to torch and add batch dimension
@@ -143,7 +146,7 @@ def transcribe(audio,
             vel = velocity_model(mini_spec)
             note[3] = vel.cpu().value
 
-    if pickle_mini_spec:
+    if return_mini_specs:
         return mini_specs
     else:
         return score, V, initW, initH
@@ -155,7 +158,6 @@ def build_model(spec_size):
                           nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
                           nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
                           nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
-    # model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
 
     return model
 
@@ -168,46 +170,65 @@ def transcribe_from_paths(audio_path,
     """
     Load a midi and an audio file and call `transcribe`. If `tofile` is not
     empty, it will also write a new MIDI file with the provided path.
+    The output midi file will contain only one track with piano (program 0)
     """
     audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
     score = midipath2mat(midi_score_path)
     new_score = transcribe(audio, score, data, velocity_model)
 
-    # write midi
+    # creating pretty_midi.PrettyMIDI object and inserting notes
+    midi = pretty_midi.PrettyMIDI()
+    midi.instruments = [pretty_midi.Instrument(0)]
+    for row in new_score:
+        midi.instruments[0].notes.append(
+            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
+
+    # writing to file
+    midi.write(tofile)
+    return new_score
 
 
-def transcribe_from_index_list(fname, data, pickle_mini_specs):
-    datasets, indices = pickle.load(open(fname, "rb"))
-    training, validation, test = indices
-    dataset = audioscoredataset.Dataset().filter(datasets=datasets)
-    dataset.paths = dataset.paths[training]
+def create_mini_specs(data):
+    """
+    Perform alignment and NMF but not velocity estimation; instead, saves all
+    the mini_specs of each note in the Maestro dataset for successive training
+    """
+    train, validation, test = maestro_splits()
+    dataset = audioscoredataset.Dataset().filter(datasets=["Maestro"])
+    dataset.paths = dataset.paths[train]
 
-    def processing(i, dataset, data, pickle_mini_specs):
+    def processing(i, dataset, data):
         audio = dataset.get_mix(i, sr=SR)
         score = dataset.get_score(i, score_type=['non_aligned'])
         return transcribe(
-            audio, score, data, pickle_mini_specs=pickle_mini_specs)
+            audio, score, data, return_mini_specs=True)
 
     mini_specs = dataset.parallel(
-        processing, data, pickle_mini_specs, n_jobs=NJOBS)
+        processing, data, n_jobs=NJOBS)
     mini_specs = [i for j in mini_specs for i in j]
     pickle.dump(gzip.open(MINI_SPEC_PATH, 'wb'))
 
 
+def show_usage():
+    print(
+        f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
+    )
+    print(
+        f"Usage: {sys.argv[0]} create_mini_specs"
+    )
+
+
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) < 3:
-        print(
-            f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
-        )
-        print(
-            f"Usage: {sys.argv[0]} create_mini_specs [list_of_files_in_training_set]"
-        )
+    if len(sys.argv) < 2:
+        show_usage()
     elif sys.argv[1] == 'create_mini_specs':
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        transcribe_from_index_list(sys.argv[2], data, pickle_mini_specs=True)
+        create_mini_specs(data)
+    elif len(sys.argv) < 4:
+        show_usage()
     else:
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         velocity_model = build_model((data[0].shape[0], BASIS))
+        velocity_model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
         transcribe_from_paths(sys.argv[1], sys.argv[2], data, velocity_model,
                               sys.argv[3])

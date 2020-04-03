@@ -1,6 +1,7 @@
-import pickle
 import json
 from asmd import audioscoredataset
+
+MAESTRO_JSON = "maestro-v2.0.0.json"
 
 
 def search_audio_filename_in_original_maestro(filename, maestro):
@@ -10,11 +11,10 @@ def search_audio_filename_in_original_maestro(filename, maestro):
     return None
 
 
-if __name__ == "__main__":
-    d = audioscoredataset.Dataset()
-    d.filter(datasets=['Maestro'])
+def maestro_splits():
+    d = audioscoredataset.Dataset().filter(datasets=['Maestro'])
 
-    maestro = json.load(open("maestro-v2.0.0.json"))
+    maestro = json.load(open(MAESTRO_JSON))
     train, validation, test = [], [], []
     for i in range(len(d)):
         filename = d.paths[i][0][0][23:]
@@ -28,6 +28,4 @@ if __name__ == "__main__":
         else:
             raise RuntimeError(filename +
                                "  not found in maestro original json")
-
-    pickle.dump((["Maestro"], [train, validation, test]),
-                open("maestro_split_indices.pkl", "wb"))
+    return train, validation, test
