@@ -85,7 +85,7 @@ _____________
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_
     #. ``poetry run python -m perceptual.proposed train`` to train our model
-           for velocity estimation
+           for velocity estimation and test it
 
 To run the objective evaluation use
 

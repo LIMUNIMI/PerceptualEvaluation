@@ -10,6 +10,7 @@ from .utils import stretch_pianoroll
 import pickle
 import lzma
 import torch
+import torch.nn.functional as F
 from torch import nn
 from asmd import audioscoredataset
 import numpy as np
@@ -17,15 +18,18 @@ import sys
 from .maestro_split_indices import maestro_splits
 import pretty_midi
 import random
+from tqdm import tqdm
 
 MINI_SPEC_PATH = 'mini_specs.pkl.xz'
-MINI_SPEC_SIZE = 20
-DEVICE = 'cuda'
+MINI_SPEC_SIZE = 30
+DEVICE = 'cuda:0'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 4
 EPS_ACTIVATIONS = 1e-4
 NUM_SONGS_FOR_TRAINING = 20
+EPOCHS = 100
+BATCH_SIZE = 100
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -157,11 +161,28 @@ def transcribe(audio,
 
 
 def build_model(spec_size):
-    n_in, n_h, n_out = spec_size[0], spec_size[1], 1
-    model = nn.Sequential(nn.Linear(n_in, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-                          nn.SELU(), nn.Linear(n_h, n_h), nn.SELU(),
-                          nn.Linear(n_h, n_h), nn.SELU(), nn.Linear(n_h, n_h),
-                          nn.SELU(), nn.Linear(n_h, n_out)).to(DEVICE)
+    # spec_size is (100, 20) -> 2000
+    n_in, n_out = spec_size[0] * spec_size[1], 1
+    model = nn.Sequential(
+        nn.Linear(n_in, n_in // 2),
+        nn.ReLU(),  # 1000
+        nn.Linear(n_in // 2, n_in // 4),
+        nn.ReLU(),  # 500
+        nn.Linear(n_in // 4, n_in // 8),
+        nn.ReLU(),  # 250
+        nn.Linear(n_in // 8, n_in // 16),
+        nn.ReLU(),  # 125
+        nn.Linear(n_in // 16, n_in // 32),
+        nn.ReLU(),  # 62
+        nn.Linear(n_in // 32, n_in // 64),
+        nn.ReLU(),  # 31
+        nn.Linear(n_in // 64, n_out),
+        nn.Sigmoid())
+
+    def predict(self, x):
+        return round(self.forward(x) * 127)
+
+    model.predict = predict
 
     return model
 
@@ -231,11 +252,123 @@ def create_mini_specs(data):
     )
 
 
+def train(data):
+
+    model = build_model((data[0].shape[0], BASIS)).to(DEVICE)
+    inputs, targets = pickle.load(lzma.open(MINI_SPEC_PATH, 'rb'))
+
+    # shuffle and split
+    indices = list(range(len(inputs)))
+    random.shuffle(indices)
+    inputs = np.array(inputs)
+    targets = np.array(targets)
+    train_size = int(len(indices) * 0.7)
+    test_size = valid_size = int(len(indices) * 0.15)
+    train_x = inputs[indices[:train_size]]
+    valid_x = inputs[indices[train_size:train_size + valid_size]]
+    test_x = inputs[indices[-test_size:]]
+    train_y = targets[indices[:train_size]]
+    valid_y = targets[indices[train_size:train_size + valid_size]]
+    test_y = targets[indices[-test_size:]]
+
+    class Dataset(torch.utils.data.Dataset):
+        def __init__(self, inputs, targets):
+            super().__init__()
+            self.inputs = inputs
+            self.targets = targets
+
+        def __getitem__(self, i):
+            input = torch.tensor(self.inputs[i]).flatten()
+            target = torch.tensor(self.targets[i])
+            return input, target
+
+    # creating loaders
+    trainloader = torch.utils.data.DataLoader(Dataset(train_x, train_y),
+                                              batch_size=BATCH_SIZE,
+                                              num_workers=NJOBS,
+                                              pin_memory=True)
+    validloader = torch.utils.data.DataLoader(Dataset(valid_x, valid_y),
+                                              batch_size=BATCH_SIZE,
+                                              num_workers=NJOBS,
+                                              pin_memory=True)
+    testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y),
+                                             batch_size=BATCH_SIZE,
+                                             num_workers=NJOBS,
+                                             pin_memory=True)
+
+    optim = torch.optim.Adadelta(model.parameters())
+
+    # training and validating
+    best_epoch = 0
+    best_params = None
+    best_loss = 9999
+    for epoch in range(EPOCHS):
+        print(f"-- Epoch {epoch} --")
+        trainloss, validloss = [], []
+        print("-> Training")
+        model.train()
+        for inputs, targets in tqdm(trainloader):
+            inputs = inputs.to(DEVICE)
+            targets = targets.to(DEVICE)
+
+            optim.zero_grad()
+            out = model.predict(inputs)
+            loss = F.l1_loss(targets, out)
+            loss.backward()
+            optim.step()
+            trainloss.append(loss.detach().cpu().numpy())
+
+        print(f"training loss : {np.mean(trainloss)}")
+
+        print("-> Validating")
+        with torch.no_grad():
+            model.eval()
+            for inputs, targets in tqdm(validloader):
+                inputs = inputs.to(DEVICE)
+                targets = targets.to(DEVICE)
+
+                out = model.predict(inputs)
+                loss = F.l1_loss(targets, out)
+                validloss.append(loss.detach().cpu().numpy())
+
+        validloss = np.mean(validloss)
+        print(f"validation loss : {validloss}")
+        if validloss < best_loss:
+            best_loss = validloss
+            best_epoch = epoch
+            best_params = model.state_dict()
+        elif epoch - best_epoch > 10:
+            print("-- Early stop! --")
+            break
+
+    # saving params
+    pickle.dump(open(VELOCITY_MODEL_PATH, 'wb'))
+    model.load_state_dict(best_params)
+
+    # testing
+    print("-> Testing")
+    testloss = []
+    with torch.no_grad():
+        model.eval()
+        for inputs, targets in tqdm(testloader):
+            inputs = inputs.to(DEVICE)
+            targets = targets.to(DEVICE)
+
+            out = model.predict(inputs)
+            loss = F.l1_loss(targets, out)
+            testloss.append(loss.detach().cpu().numpy())
+
+        print(
+            f"testing loss (mean, std): {np.mean(testloss)}, {np.std(testloss)}"
+        )
+
+
 def show_usage():
     print(
         f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
     )
     print(f"Usage: {sys.argv[0]} create_mini_specs")
+    print(f"Usage: {sys.argv[0]} train")
 
 
 if __name__ == '__main__':
@@ -244,11 +377,14 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'create_mini_specs':
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         create_mini_specs(data)
+    elif sys.argv[1] == 'train':
+        data = pickle.load(open(TEMPLATE_PATH, 'rb'))
+        train(data)
     elif len(sys.argv) < 4:
         show_usage()
     else:
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        velocity_model = build_model((data[0].shape[0], BASIS))
+        velocity_model = build_model((data[0].shape[0], BASIS)).to(DEVICE)
         velocity_model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
         transcribe_from_paths(sys.argv[1], sys.argv[2], data, velocity_model,
                               sys.argv[3])
