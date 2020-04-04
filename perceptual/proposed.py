@@ -1,10 +1,7 @@
 from copy import copy
 from .nmf import NMF
-from .alignment.align_with_amt import audio_to_score_alignment
 from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
 from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
-import essentia.standard as esst
-import essentia as es
 from .utils import make_pianoroll, find_start_stop, midipath2mat
 from .utils import stretch_pianoroll
 import pickle
@@ -15,25 +12,26 @@ from torch import nn
 from asmd import audioscoredataset
 import numpy as np
 import sys
-from .maestro_split_indices import maestro_splits
 import pretty_midi
 import random
 from tqdm import tqdm
 
 MINI_SPEC_PATH = 'mini_specs.pkl.xz'
-MINI_SPEC_SIZE = 30
-DEVICE = 'cuda:0'
+MINI_SPEC_SIZE = 20
+DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 4
 EPS_ACTIVATIONS = 1e-4
-NUM_SONGS_FOR_TRAINING = 20
+NUM_SONGS_FOR_TRAINING = 30
 EPOCHS = 100
 BATCH_SIZE = 100
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
 
+    import essentia.standard as esst
+    import essentia as es
     spectrogram = []
     spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
     for frame in esst.FrameGenerator(audio, frameSize=frames, hopSize=hop):
@@ -64,6 +62,8 @@ def transcribe(audio,
     case `audio_path` and `res` can be ignored
 
     """
+    from .alignment.align_with_amt import audio_to_score_alignment
+
     initW, minpitch, maxpitch = data
     initW = copy(initW)
     score = copy(score)
@@ -160,33 +160,6 @@ def transcribe(audio,
         return score, V, initW, initH
 
 
-def build_model(spec_size):
-    # spec_size is (100, 20) -> 2000
-    n_in, n_out = spec_size[0] * spec_size[1], 1
-    model = nn.Sequential(
-        nn.Linear(n_in, n_in // 2),
-        nn.ReLU(),  # 1000
-        nn.Linear(n_in // 2, n_in // 4),
-        nn.ReLU(),  # 500
-        nn.Linear(n_in // 4, n_in // 8),
-        nn.ReLU(),  # 250
-        nn.Linear(n_in // 8, n_in // 16),
-        nn.ReLU(),  # 125
-        nn.Linear(n_in // 16, n_in // 32),
-        nn.ReLU(),  # 62
-        nn.Linear(n_in // 32, n_in // 64),
-        nn.ReLU(),  # 31
-        nn.Linear(n_in // 64, n_out),
-        nn.Sigmoid())
-
-    def predict(self, x):
-        return round(self.forward(x) * 127)
-
-    model.predict = predict
-
-    return model
-
-
 def transcribe_from_paths(audio_path,
                           midi_score_path,
                           data,
@@ -197,6 +170,7 @@ def transcribe_from_paths(audio_path,
     empty, it will also write a new MIDI file with the provided path.
     The output midi file will contain only one track with piano (program 0)
     """
+    import essentia.standard as esst
     audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
     score = midipath2mat(midi_score_path)
     new_score = transcribe(audio, score, data, velocity_model)
@@ -226,6 +200,7 @@ def create_mini_specs(data):
     Perform alignment and NMF but not velocity estimation; instead, saves all
     the mini_specs of each note in the Maestro dataset for successive training
     """
+    from .maestro_split_indices import maestro_splits
     train, validation, test = maestro_splits()
     dataset = audioscoredataset.Dataset().filter(datasets=["Maestro"])
     random.seed(1750)
@@ -240,11 +215,10 @@ def create_mini_specs(data):
         # removing nones
         for i in range(len(specs)):
             spec = specs[i]
-            if spec is not None:
+            vel = vels[i]
+            if spec is not None and vel is not None:
                 mini_specs.append(spec)
-                velocities.append(vels[i])
-        mini_specs += specs
-        velocities += vels
+                velocities.append(vel)
 
     pickle.dump((mini_specs, velocities), lzma.open(MINI_SPEC_PATH, 'wb'))
     print(
@@ -252,10 +226,55 @@ def create_mini_specs(data):
     )
 
 
+class VelocityEstimation(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.model = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
+                                   nn.Conv2d(1, 128, (5, 4), 2), nn.ReLU(),
+                                   nn.Conv2d(128, 128, (5, 4), 2), nn.ReLU(),
+                                   nn.Conv2d(128, 128, (22, 3)), nn.ReLU())
+
+    def forward(self, x):
+
+        x = self.model(x)[:, :, 0, 0]
+        x = F.softmax(x, dim=1)
+        return x
+
+    def predict(self, x):
+        x = self.forward(x)
+        return torch.argmax(x, dim=1)
+
+
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, inputs, targets):
+        super().__init__()
+        self.inputs = inputs
+        self.targets = targets
+        assert len(self.inputs) == len(self.targets),\
+            "inputs and targets must have the same length!"
+
+    def __getitem__(self, i):
+        input = torch.tensor(self.inputs[i]).to(torch.float)
+        target = torch.zeros(128).to(torch.float)
+        target[int(self.targets[i])] = 1
+        return input, target
+
+    def __len__(self):
+        return len(self.inputs)
+
+
 def train(data):
 
-    model = build_model((data[0].shape[0], BASIS)).to(DEVICE)
+    print("Loading dataset...")
     inputs, targets = pickle.load(lzma.open(MINI_SPEC_PATH, 'rb'))
+
+    print("Building model...")
+    model = VelocityEstimation().to(DEVICE)
+    print(model)
+    for i in inputs:
+        if i is None:
+            raise Exception("Dataset contains nones...")
 
     # shuffle and split
     indices = list(range(len(inputs)))
@@ -270,17 +289,6 @@ def train(data):
     train_y = targets[indices[:train_size]]
     valid_y = targets[indices[train_size:train_size + valid_size]]
     test_y = targets[indices[-test_size:]]
-
-    class Dataset(torch.utils.data.Dataset):
-        def __init__(self, inputs, targets):
-            super().__init__()
-            self.inputs = inputs
-            self.targets = targets
-
-        def __getitem__(self, i):
-            input = torch.tensor(self.inputs[i]).flatten()
-            target = torch.tensor(self.targets[i])
-            return input, target
 
     # creating loaders
     trainloader = torch.utils.data.DataLoader(Dataset(train_x, train_y),
@@ -298,7 +306,6 @@ def train(data):
 
     optim = torch.optim.Adadelta(model.parameters())
 
-    # training and validating
     best_epoch = 0
     best_params = None
     best_loss = 9999
@@ -308,12 +315,12 @@ def train(data):
         print("-> Training")
         model.train()
         for inputs, targets in tqdm(trainloader):
-            inputs = inputs.to(DEVICE)
+            inputs = inputs.to(DEVICE).unsqueeze(1)
             targets = targets.to(DEVICE)
 
             optim.zero_grad()
-            out = model.predict(inputs)
-            loss = F.l1_loss(targets, out)
+            out = model(inputs)
+            loss = F.binary_cross_entropy(out, targets)
             loss.backward()
             optim.step()
             trainloss.append(loss.detach().cpu().numpy())
@@ -324,10 +331,11 @@ def train(data):
         with torch.no_grad():
             model.eval()
             for inputs, targets in tqdm(validloader):
-                inputs = inputs.to(DEVICE)
-                targets = targets.to(DEVICE)
+                inputs = inputs.to(DEVICE).unsqueeze(1)
+                targets = torch.argmax(targets.to(DEVICE),
+                                       dim=1).to(torch.float)
 
-                out = model.predict(inputs)
+                out = model.predict(inputs).to(torch.float)
                 loss = F.l1_loss(targets, out)
                 validloss.append(loss.detach().cpu().numpy())
 
@@ -351,10 +359,10 @@ def train(data):
     with torch.no_grad():
         model.eval()
         for inputs, targets in tqdm(testloader):
-            inputs = inputs.to(DEVICE)
-            targets = targets.to(DEVICE)
+            inputs = inputs.to(DEVICE).unsqueeze(1)
+            targets = torch.argmax(targets.to(DEVICE), dim=1).to(torch.float)
 
-            out = model.predict(inputs)
+            out = model(inputs).to(torch.float)
             loss = F.l1_loss(targets, out)
             testloss.append(loss.detach().cpu().numpy())
 
@@ -384,7 +392,7 @@ if __name__ == '__main__':
         show_usage()
     else:
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        velocity_model = build_model((data[0].shape[0], BASIS)).to(DEVICE)
+        velocity_model = VelocityEstimation().to(DEVICE)
         velocity_model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
         transcribe_from_paths(sys.argv[1], sys.argv[2], data, velocity_model,
                               sys.argv[3])

@@ -3,7 +3,6 @@ import numpy as np
 import pickle
 import sys
 import plotly.graph_objects as go
-import essentia.standard as esst
 from tqdm import trange
 
 SR = 22050
@@ -21,6 +20,7 @@ SCALE_PATH = ['to_be_synthesized/scales.mid', 'audio/pianoteq_scales.mp3']
 
 
 def main():
+    import essentia.standard as esst
     spec = esst.SpectrumCQ(numberBins=BINS, sampleRate=SR, windowType='hann')
 
     print("Loading midi")
