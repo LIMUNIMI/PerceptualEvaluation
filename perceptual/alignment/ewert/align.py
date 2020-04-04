@@ -1,11 +1,17 @@
 import numpy as np
 import pretty_midi
 from math import floor, log2
-import librosa
+import fastdtw
 import librosa.display
 from .dlnco.DLNCO import dlnco
 import os
 import essentia.standard as esst
+from .. import cdist
+
+
+# hack to let fastdtw accept float32
+def _my_prep_inputs(x, y, dist):
+    return x, y
 
 
 def multiple_audio_alignment(audio1,
@@ -68,10 +74,12 @@ def multiple_audio_alignment(audio1,
     audio2_merge = audio2_chroma + audio2_dlnco if merge_dlnco else audio2_chroma
 
     # print("Starting DTW")
-    D, wp = librosa.sequence.dtw(X=audio1_merge,
-                                 Y=audio2_merge,
-                                 metric='cosine')  # D (153, 307)
-    del D
+    # hack to let fastdtw accept float32
+    fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
+    _D, wp = fastdtw.fastdtw(audio1_merge.T.astype(np.float32),
+                             audio2_merge.T.astype(np.float32),
+                             dist=cdist.cosine)
+
     return wp
 
 
@@ -80,8 +88,7 @@ def audio_to_midi_alignment(midi,
                             sr,
                             hopsize,
                             n_fft=4096,
-                            merge_dlnco=True,
-                            sf2_path=None):
+                            merge_dlnco=True):
     """
     Synthesize midi file, align it to :attr: `audio` and returns a mapping
     between midi times and audio times.
@@ -101,9 +108,6 @@ def audio_to_midi_alignment(midi,
         The length of the FFT. Consider to use something like `4*hopsize`
     merge_dlnco : bool
         Unknown
-    sf2_path : string
-        The path to a sf2 file. If `None`, then `TimGM6mb.sf2` is used.
-
 
     Returns
     -------
@@ -114,13 +118,16 @@ def audio_to_midi_alignment(midi,
     """
     # print("Synthesizing MIDI")
     fname = str(os.getpid())
-    midi.write(fname+".mid")
+    midi.write(fname + ".mid")
+    # os.system(
+    #     f"fluidsynth -ni Arachno\\ SoundFont\\ -\\ Version\\ 1.0.sf2 {fname}.mid -F {fname}.wav -r {sr} > /dev/null 2>&1"
+    # )
     os.system(
         f"fluidsynth -ni SalamanderGrandPianoV3Retuned-renormalized.sf2 {fname}.mid -F {fname}.wav -r {sr} > /dev/null 2>&1"
     )
-    audio1 = esst.EasyLoader(filename=fname+".wav", sampleRate=sr)()
-    os.remove(fname+".mid")
-    os.remove(fname+".wav")
+    audio1 = esst.EasyLoader(filename=fname + ".wav", sampleRate=sr)()
+    os.remove(fname + ".mid")
+    os.remove(fname + ".wav")
 
     audio2 = audio
     # print("Starting alignment")
@@ -128,7 +135,7 @@ def audio_to_midi_alignment(midi,
     wp_times = np.asarray(wp) * hopsize / sr  # (330, 2) wrapping path
     # print("Finished alignment")
 
-    return wp_times[::-1]
+    return wp_times
 
 
 def audio_to_score_alignment(mat,
@@ -160,9 +167,6 @@ def audio_to_score_alignment(mat,
         The length of the FFT. Consider to use something like `4*hopsize`
     merge_dlnco : bool
         Unknown
-    sf2_path : string
-        The path to a sf2 file. If `None`, then `TimGM6mb.sf2` is used.
-
 
     Returns
     -------
@@ -195,11 +199,11 @@ def audio_to_score_alignment(mat,
 
     # aligning midi to audio
     hopsize = 2**floor(log2(sr * res))
-    mapping_times = audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft,
-                                            merge_dlnco, sf2_path)
+    path = audio_to_midi_alignment(midi, audio, sr, hopsize, n_fft,
+                                   merge_dlnco)
 
     # interpolating
-    new_ons = np.interp(mat[:, 1], mapping_times[:, 0], mapping_times[:, 1])
-    new_offs = np.interp(mat[:, 2], mapping_times[:, 0], mapping_times[:, 1])
+    new_ons = np.interp(mat[:, 1], path[:, 0], path[:, 1])
+    new_offs = np.interp(mat[:, 2], path[:, 0], path[:, 1])
 
     return new_ons, new_offs

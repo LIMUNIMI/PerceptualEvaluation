@@ -14,10 +14,11 @@ DISTS = [
     'correlation', 'manhattan'
 ]
 RADIUS_DTW = [0.01, 0.2, 0.5, 1.0]
-RADIUS_FASTDTW = [1, 5, 10, 20]
+RADIUS_FASTDTW = [1, 5, 10]
 RES = 0.1
 FASTDTW = True
 NUM_SONGS = 160
+EPS = 1e-15
 
 
 # hack to let fastdtw accept float32
@@ -61,7 +62,7 @@ def evaluate(i, dataset, dist, radius, use_fastdtw=False):
     misaligned[:, 2] = np.interp(misaligned[:, 2], path[:, 1], path[:, 0])
 
     # evaluating
-    errors -= np.abs(np.vstack(utils.evaluate2d(misaligned, aligned)))
+    errors /= (np.abs(np.vstack(utils.evaluate2d(misaligned, aligned))) + EPS)
     return errors
 
 
@@ -116,13 +117,13 @@ def log(data):
     data = np.hstack(data)
     m1 = np.mean(data[0])
     s1 = np.std(data[0])
-    print(f'Error improvement ons (avg, std): {m1:.4E}, {s1:.4E}')
+    print(f'Error ratio ons (avg, std): {m1:.6E}, {s1:.6E}')
     m2 = np.mean(data[1])
     s2 = np.std(data[1])
-    print(f'Error improvement offs (avg, std): {m2:.4E}, {s2:.4E}')
+    print(f'Error ratio offs (avg, std): {m2:.6E}, {s2:.6E}')
     m3 = np.mean(data)
     s3 = np.std(data)
-    print(f'Error improvement mean (avg, std): {m3:.4E}, {s3:.4E}')
+    print(f'Error ratio mean (avg, std): {m3:.6E}, {s3:.6E}')
     return m3
 
 

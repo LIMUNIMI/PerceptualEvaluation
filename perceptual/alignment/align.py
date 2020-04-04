@@ -2,7 +2,7 @@
 
 import sys
 import csv
-
+from .. import utils
 import numpy as np
 
 from asmd import audioscoredataset
@@ -21,34 +21,52 @@ else:
 
 SR = 22050
 RES = 0.02
+NJOBS = 10
+EPS = 1e-15
 
 
 def path_processing(i, data):
     # print(f"    Running Alignment on {data.paths[i][2][0]}")
-    gt = data.get_score(i, score_type='precise_alignment')
-    mat = data.get_score(i, score_type='non_aligned')
+    aligned = data.get_score(i, score_type='precise_alignment')
+    misaligned = data.get_score(i, score_type='non_aligned')
     audio, sr = data.get_mix(i, sr=SR)
-    new_ons, new_offs = audio_to_score_alignment(mat, audio, sr, res=RES)
+    start_errors = np.abs(np.vstack(utils.evaluate2d(misaligned, aligned)))
 
-    # computing errors
-    err_ons = new_ons - gt[:, 1]
-    err_offs = new_offs - gt[:, 2]
+    new_ons, new_offs = audio_to_score_alignment(misaligned,
+                                                 audio,
+                                                 sr,
+                                                 res=RES)
+
+    misaligned[:, 1] = new_ons
+    misaligned[:, 2] = new_offs
+
+    end_errors = np.abs(np.vstack(utils.evaluate2d(misaligned, aligned)))
 
     # interleaving lists
-    err = np.empty((2*err_ons.shape[0],))
-    err[::2] = err_ons
-    err[1::2] = err_offs
-    del gt, mat, audio, new_ons, new_offs
+    err = np.empty((2 * end_errors.shape[1], ))
+    err[::2] = end_errors[0]
+    err[1::2] = end_errors[1]
     # print(
     #     f"{np.mean(err_ons):.2E}, {np.mean(err_offs):.2E}" +
     #     f", {np.std(err_ons):.2E}, {np.std(err_offs):.2E}")
-    return err
+    return err, start_errors / (end_errors + EPS)
 
 
 if __name__ == "__main__":
     data = audioscoredataset.Dataset().filter(datasets=['SMD'])
-    errors = data.parallel(path_processing, n_jobs=2)
+    results = data.parallel(path_processing, n_jobs=NJOBS)
 
-    with open(FNAME, "w", newline="") as f:
+    ratios = []
+    errors = []
+    for err, ratio in results:
+        ratios.append(ratio)
+        errors.append(err)
+
+    ratios = np.hstack(ratios)
+    print(
+        f"Average ratio error after/before: {np.mean(ratios):.6E}, std: {np.std(ratios):.6E}"
+    )
+
+    with open(FNAME, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerows(errors)

@@ -76,10 +76,12 @@ if __name__ == '__main__':
         files = args.infile
         names = [file.name for file in files]
 
+        print("Analyzing files...")
         values_ons = analyze(files, 'onsets', names)
         values_offs = analyze(files, 'offsets', names)
         values_both = analyze(files, 'both', names)
 
+        print("Plotting...")
         df = pd.concat(
             {
                 'ons': values_ons,
@@ -95,14 +97,17 @@ if __name__ == '__main__':
             'variable_1': 'Method',
             'value': '% matches'
         })
+
+        df['Method'] = df['Method'] + ' ' + df['Type']
         df['Time (s)'] = np.hstack([th.values for i in range(len(files) * 3)])
 
         fig = px.line(df,
                       x='Time (s)',
                       y='% matches',
-                      facet_col='Type',
+                      # facet_col='Type',
                       color='Method')
         # fig.update_layout(yaxis_tickformat='%', yaxis={'dtick':0.05}, xaxis={'dtick':0.5})
         fig.update_yaxes(dtick=0.05, tickformat='%')
         fig.update_xaxes(dtick=END / 10)
         fig.show()
+        fig.write_image("results/alignment.svg")

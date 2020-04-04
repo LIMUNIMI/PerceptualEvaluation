@@ -128,7 +128,7 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
     fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
     _D, path = fastdtw.fastdtw(pianoroll.astype(np.float32).T,
                                audio_features.astype(np.float32).T,
-                               dist=cdist.braycurtis,
+                               dist=cdist.cosine,
                                radius=1)
     path = np.array(path) * res
 
