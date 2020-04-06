@@ -84,6 +84,7 @@ _____________
 #. Train our proposed model:
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_
+    #. [optional] uncompress the dataset: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it
 

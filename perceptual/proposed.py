@@ -15,6 +15,7 @@ import sys
 import pretty_midi
 import random
 from tqdm import tqdm
+import os
 
 MINI_SPEC_PATH = 'mini_specs.pkl.xz'
 MINI_SPEC_SIZE = 20
@@ -23,7 +24,7 @@ VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 4
 EPS_ACTIVATIONS = 1e-4
-NUM_SONGS_FOR_TRAINING = 30
+NUM_SONGS_FOR_TRAINING = 80
 EPOCHS = 100
 BATCH_SIZE = 100
 
@@ -146,6 +147,8 @@ def transcribe(audio,
             end = end - (end_pad - MINI_SPEC_SIZE)
             end_pad = MINI_SPEC_SIZE
         mini_spec[:, begin_pad:end_pad] += _mini_spec[:, start:end]
+        # normalizing with rms
+        mini_spec /= (mini_spec**2).mean()**0.5
 
         if return_mini_specs:
             mini_specs.append(mini_spec)
@@ -230,15 +233,18 @@ class VelocityEstimation(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.model = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
-                                   nn.Conv2d(1, 128, (5, 4), 2), nn.ReLU(),
-                                   nn.Conv2d(128, 128, (5, 4), 2), nn.ReLU(),
-                                   nn.Conv2d(128, 128, (22, 3)), nn.ReLU())
+        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
+                                    nn.Conv2d(1, 128, 4, (2, 1)), nn.ReLU(),
+                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
+                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
+                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
+                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU())
+        self.end = nn.Sequential(nn.Linear(5, 1), nn.Softmax(dim=1))
 
     def forward(self, x):
 
-        x = self.model(x)[:, :, 0, 0]
-        x = F.softmax(x, dim=1)
+        x = self.encode(x)[:, :, 0, :]
+        x = self.end(x)[:, :, 0]
         return x
 
     def predict(self, x):
@@ -249,16 +255,15 @@ class VelocityEstimation(nn.Module):
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, inputs, targets):
         super().__init__()
-        self.inputs = inputs
-        self.targets = targets
+        self.inputs = torch.tensor(inputs).to(torch.float).to(DEVICE)
+        self.targets = torch.zeros(len(targets),
+                                   128).to(torch.float).to(DEVICE)
+        self.targets[:, targets] = 1
         assert len(self.inputs) == len(self.targets),\
             "inputs and targets must have the same length!"
 
     def __getitem__(self, i):
-        input = torch.tensor(self.inputs[i]).to(torch.float)
-        target = torch.zeros(128).to(torch.float)
-        target[int(self.targets[i])] = 1
-        return input, target
+        return self.inputs[i], self.targets[i]
 
     def __len__(self):
         return len(self.inputs)
@@ -267,7 +272,12 @@ class Dataset(torch.utils.data.Dataset):
 def train(data):
 
     print("Loading dataset...")
-    inputs, targets = pickle.load(lzma.open(MINI_SPEC_PATH, 'rb'))
+    if os.path.exists(MINI_SPEC_PATH[:-3]):
+        mini_spec = open(MINI_SPEC_PATH[:-3], 'rb')
+    else:
+        mini_spec = lzma.open(MINI_SPEC_PATH, 'rb')
+    inputs, targets = pickle.load(mini_spec)
+    mini_spec.close()
 
     print("Building model...")
     model = VelocityEstimation().to(DEVICE)
@@ -278,6 +288,7 @@ def train(data):
 
     # shuffle and split
     indices = list(range(len(inputs)))
+    random.seed(1998)
     random.shuffle(indices)
     inputs = np.array(inputs)
     targets = np.array(targets)
@@ -292,17 +303,11 @@ def train(data):
 
     # creating loaders
     trainloader = torch.utils.data.DataLoader(Dataset(train_x, train_y),
-                                              batch_size=BATCH_SIZE,
-                                              num_workers=NJOBS,
-                                              pin_memory=True)
+                                              batch_size=BATCH_SIZE)
     validloader = torch.utils.data.DataLoader(Dataset(valid_x, valid_y),
-                                              batch_size=BATCH_SIZE,
-                                              num_workers=NJOBS,
-                                              pin_memory=True)
+                                              batch_size=BATCH_SIZE)
     testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y),
-                                             batch_size=BATCH_SIZE,
-                                             num_workers=NJOBS,
-                                             pin_memory=True)
+                                             batch_size=BATCH_SIZE)
 
     optim = torch.optim.Adadelta(model.parameters())
 
@@ -331,9 +336,8 @@ def train(data):
         with torch.no_grad():
             model.eval()
             for inputs, targets in tqdm(validloader):
-                inputs = inputs.to(DEVICE).unsqueeze(1)
-                targets = torch.argmax(targets.to(DEVICE),
-                                       dim=1).to(torch.float)
+                inputs = inputs.unsqueeze(1)
+                targets = torch.argmax(targets, dim=1).to(torch.float)
 
                 out = model.predict(inputs).to(torch.float)
                 loss = F.l1_loss(targets, out)
@@ -359,15 +363,15 @@ def train(data):
     with torch.no_grad():
         model.eval()
         for inputs, targets in tqdm(testloader):
-            inputs = inputs.to(DEVICE).unsqueeze(1)
-            targets = torch.argmax(targets.to(DEVICE), dim=1).to(torch.float)
+            inputs = inputs.unsqueeze(1)
+            targets = torch.argmax(targets, dim=1).to(torch.float)
 
-            out = model(inputs).to(torch.float)
-            loss = F.l1_loss(targets, out)
-            testloss.append(loss.detach().cpu().numpy())
+            out = model.predict(inputs).to(torch.float)
+            loss = torch.abs(targets - out)
+            testloss.append += loss.detach().cpu().numpy().tolist()
 
         print(
-            f"testing loss (mean, std): {np.mean(testloss)}, {np.std(testloss)}"
+            f"testing absolute error (mean, std): {np.mean(testloss)}, {np.std(testloss)}"
         )
 
 
