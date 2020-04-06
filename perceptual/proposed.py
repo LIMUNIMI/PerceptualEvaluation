@@ -340,8 +340,8 @@ def train(data):
                 targets = torch.argmax(targets, dim=1).to(torch.float)
 
                 out = model.predict(inputs).to(torch.float)
-                loss = F.l1_loss(targets, out)
-                validloss.append(loss.detach().cpu().numpy())
+                loss = torch.abs(targets - out)
+                validloss += loss.tolist()
 
         validloss = np.mean(validloss)
         print(f"validation loss : {validloss}")
@@ -354,7 +354,7 @@ def train(data):
             break
 
     # saving params
-    pickle.dump(open(VELOCITY_MODEL_PATH, 'wb'))
+    pickle.dump(best_params, open(VELOCITY_MODEL_PATH, 'wb'))
     model.load_state_dict(best_params)
 
     # testing
@@ -368,7 +368,7 @@ def train(data):
 
             out = model.predict(inputs).to(torch.float)
             loss = torch.abs(targets - out)
-            testloss.append += loss.detach().cpu().numpy().tolist()
+            testloss += loss.tolist()
 
         print(
             f"testing absolute error (mean, std): {np.mean(testloss)}, {np.std(testloss)}"

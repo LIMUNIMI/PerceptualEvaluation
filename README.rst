@@ -28,20 +28,22 @@ Chose excerpts
 
 #. ``poetry run python -m perceptual.excerpt_search``
 
-This will analyze ``vienna_corpus`` in search of excerpts and will create a new
-directory ``excerpts`` with all extracted excerpts and midi aligned. You still
-need to create the corresponding scores for testing the score-informed method.
-You can find original scores in ``my_scores`` directory, but you have to segment
-them by hand. Name them with the same name of audio file but extension
-'-score.mid'
+This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
+original performances and will create a new directory ``excerpts`` with all
+extracted excerpts and midi aligned. 
 
-Transcribe excerpts
--------------------
+.. You still need to create the corresponding scores for testing the
+.. score-informed method. You can find original scores in ``my_scores``
+.. directory, but you have to segment them by hand. Name them with the same name
+.. of audio file but extension '-score.mid'
 
-#. ``poetry run python -m perceptual.transcribe``
+.. Transcribe excerpts
+.. -------------------
 
-This will transcribe excerpts and will store them as midi file in the ``excerpt``
-folder.
+.. #. ``poetry run python -m perceptual.transcribe``
+
+.. This will transcribe excerpts and will store them as midi file in the ``excerpt``
+.. folder.
 
 Chose vsts
 ----------
@@ -80,26 +82,33 @@ _________
 Transcription
 _____________
 
-#. Download our pretrained vienna model on Maestro and put it in your working dir from our mega_
+#. Download our pretrained vienna model on Maestro and put it in your working
+   dir from our mega_
 #. Train our proposed model:
+    #. You will need the template matrix provided in this repo. To rebuild it
+           run ``poetry run python -m perceptual.make_template``. You will need
+           the synthesized scale and the corresponding midi in the ``scales``
+           and ``audio`` folder. You can download them from our mega_
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
-           the dataset of mini_specs or download it from out mega_
-    #. [optional] uncompress the dataset: ``unxz mini_specs.pkl.xz``
+           the dataset of mini_specs or download it from out mega_. It contains
+           506 297 mini spectrograms and uncompressed is large 8.2 GB (1.3 GB
+           compressed). 
+    #. [optional] if you need to run the code multiple times, I suggest to
+           first uncompress the dataset for speeding up the loading of the
+           data: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it
 
-To run the objective evaluation use
+#. To run the objective evaluation use
 
     ``poetry run python -m perceptual.objective_eval``
 
-To compare with subjective evaluation, store perceptual test results in
-``results`` directory with name ``perceptual.csv`` and run
+#. To compare with subjective evaluation, put your perceptual test results in
+   ``results`` directory with name ``perceptual.csv`` and run ``poetry run
+   python -m perceptual.compare_eval``. This will create csv files in
+   ``results`` directory.
 
-    ``poetry run python -m perceptual.compare_eval``
-
-This will create csv files in ``results`` directory.
-
-To plot them use ``poetry run python -m perceptual.plots``.
+#. To plot them use ``poetry run python -m perceptual.plots``.
 
 
 Perceptual tests
