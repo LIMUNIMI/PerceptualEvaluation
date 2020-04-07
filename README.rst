@@ -30,7 +30,7 @@ Chose excerpts
 
 This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
 original performances and will create a new directory ``excerpts`` with all
-extracted excerpts and midi aligned. 
+extracted excerpts and midi aligned.
 
 .. You still need to create the corresponding scores for testing the
 .. score-informed method. You can find original scores in ``my_scores``
@@ -92,12 +92,15 @@ _____________
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_. It contains
            506 297 mini spectrograms and uncompressed is large 8.2 GB (1.3 GB
-           compressed). 
+           compressed).
     #. [optional] if you need to run the code multiple times, I suggest to
            first uncompress the dataset for speeding up the loading of the
            data: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
-           for velocity estimation and test it
+           for velocity estimation and test it; 
+            #. Training set size: 354 500
+            #. Validation and test set size: 76 000
+            #. Final test absolute error (avg, std): 6.2e-2, 1.25e-1 (25 epochs)
 
 #. To run the objective evaluation use
 
