@@ -5,7 +5,6 @@ from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
 from .utils import make_pianoroll, find_start_stop, midipath2mat
 from .utils import stretch_pianoroll
 import pickle
-import lzma
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -15,9 +14,8 @@ import sys
 import pretty_midi
 import random
 from tqdm import tqdm
-import os
 
-MINI_SPEC_PATH = 'mini_specs.pkl.xz'
+MINI_SPEC_PATH = 'mini_specs.pkl'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
@@ -125,7 +123,8 @@ def transcribe(audio,
         start = max(0, int((note[1] - 0.05) / res))
         end = min(initH.shape[2], int((note[2] + 0.05) / res) + 1)
         if end - start <= 1:
-            mini_specs.append(None)
+            note[3] = 63
+            # mini_specs.append(None)
             continue
         _mini_spec = initW[:, int(note[0] - minpitch), :] @\
             initH[int(note[0] - minpitch), :, start:end]
@@ -150,16 +149,16 @@ def transcribe(audio,
         # normalizing with rms
         mini_spec /= (mini_spec**2).mean()**0.5
 
-        if return_mini_specs:
-            mini_specs.append(mini_spec)
-        else:
-            # numpy to torch and add batch dimension
-            mini_spec = torch.tensor(mini_spec).to(DEVICE).unsqueeze(0)
-            vel = velocity_model(mini_spec)
-            note[3] = vel.cpu().value
+        mini_specs.append(mini_spec)
+
     if return_mini_specs:
         return mini_specs
     else:
+        # numpy to torch and add channel dimensions
+        mini_specs = torch.tensor(mini_specs).to(DEVICE).to(
+            torch.float).unsqueeze(1)
+        vels = velocity_model(mini_specs)
+        score[score[:, 3] != 63, 3] = vels.cpu().numpy()
         return score, V, initW, initH
 
 
@@ -176,7 +175,7 @@ def transcribe_from_paths(audio_path,
     import essentia.standard as esst
     audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
     score = midipath2mat(midi_score_path)
-    new_score = transcribe(audio, score, data, velocity_model)
+    new_score, _, _, _ = transcribe(audio, score, data, velocity_model)
 
     # creating pretty_midi.PrettyMIDI object and inserting notes
     midi = pretty_midi.PrettyMIDI()
@@ -223,7 +222,7 @@ def create_mini_specs(data):
                 mini_specs.append(spec)
                 velocities.append(vel)
 
-    pickle.dump((mini_specs, velocities), lzma.open(MINI_SPEC_PATH, 'wb'))
+    pickle.dump((mini_specs, velocities), open(MINI_SPEC_PATH, 'wb'))
     print(
         f"number of (inputs, targets) in training set: {len(mini_specs)}, {len(velocities)}"
     )
@@ -233,7 +232,7 @@ class VelocityEstimation(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
+        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.5),
                                     nn.Conv2d(1, 128, 4, (2, 1)), nn.ReLU(),
                                     nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
                                     nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
@@ -272,10 +271,7 @@ class Dataset(torch.utils.data.Dataset):
 def train(data):
 
     print("Loading dataset...")
-    if os.path.exists(MINI_SPEC_PATH[:-3]):
-        mini_spec = open(MINI_SPEC_PATH[:-3], 'rb')
-    else:
-        mini_spec = lzma.open(MINI_SPEC_PATH, 'rb')
+    mini_spec = open(MINI_SPEC_PATH, 'rb')
     inputs, targets = pickle.load(mini_spec)
     mini_spec.close()
 
@@ -354,8 +350,8 @@ def train(data):
             break
 
     # saving params
-    pickle.dump(best_params, open(VELOCITY_MODEL_PATH, 'wb'))
     model.load_state_dict(best_params)
+    pickle.dump(model.to('cpu').state_dict(), open(VELOCITY_MODEL_PATH, 'wb'))
 
     # testing
     print("-> Testing")
@@ -377,7 +373,7 @@ def train(data):
 
 def show_usage():
     print(
-        f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path]"
+        f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path] [--cpu]"
     )
     print(f"Usage: {sys.argv[0]} create_mini_specs")
     print(f"Usage: {sys.argv[0]} train")
@@ -395,8 +391,12 @@ if __name__ == '__main__':
     elif len(sys.argv) < 4:
         show_usage()
     else:
+        if '--cpu' in sys.argv:
+            DEVICE = 'cpu'
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         velocity_model = VelocityEstimation().to(DEVICE)
-        velocity_model.load_state_dict(open(VELOCITY_MODEL_PATH, 'rb'))
-        transcribe_from_paths(sys.argv[1], sys.argv[2], data, velocity_model,
-                              sys.argv[3])
+        velocity_model.load_state_dict(
+            pickle.load(open(VELOCITY_MODEL_PATH, 'rb')))
+        predict_func = velocity_model.predict
+        transcribe_from_paths(sys.argv[1], sys.argv[2], data, predict_func,
+                              tofile=sys.argv[3])

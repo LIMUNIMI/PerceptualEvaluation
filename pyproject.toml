@@ -16,6 +16,7 @@ pretty_midi = "^0.2.8"
 magenta = "^1.2.2"
 fastdtw = "^0.3.4"
 psutil = "^5.7.0"
+mir_eval = "^0.5"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"

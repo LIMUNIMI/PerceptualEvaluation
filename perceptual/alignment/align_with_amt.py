@@ -109,19 +109,35 @@ def transcription(audio, sr, res=0.02, cuda=False):
 
     assert len(prediction_list) == 1
 
-    frame_predictions = prediction_list[0]['frame_predictions'][0]
+    # frame_predictions = prediction_list[0]['frame_predictions'][0]
+    frame_predictions = prediction_list[0]['onset_predictions'][0]
 
     # convert to pianoroll with resolution `res`
     n_cols = round(len(audio) / sr / res)
     frame_predictions = utils.stretch_pianoroll(frame_predictions.T, n_cols)
     pr = np.zeros((128, n_cols))
-    pr[21:109] = frame_predictions
+    pr[START_NOTE:START_NOTE+88] = frame_predictions
     return pr
 
 
 def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
+    start, stop = utils.find_start_stop(audio, sample_rate=sr)
+    audio = audio[start:stop]
     audio_features = transcription(audio, sr, res) + EPS
-    pianoroll = utils.make_pianoroll(misaligned, res=res) + EPS
+
+    misaligned[:, 1:3] -= np.min(misaligned[:, 1])
+    # force input duration to last as audio
+    audio_duration = (stop - start) / sr
+    misaligned_duration = np.max(misaligned[:, 2])
+    misaligned[:, 1:3] *= (audio_duration / misaligned_duration)
+    pianoroll = utils.make_pianoroll(misaligned, res=res, velocities=False,
+                                     only_onsets=True) + EPS
+    # pianoroll = utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
+    import visdom
+    vis = visdom.Visdom()
+    vis.heatmap(pianoroll)
+    vis.heatmap(audio_features)
+    __import__('ipdb').set_trace()
 
     # parameters for dtw were chosen with midi2midi on musicnet (see dtw_tuning)
     # hack to let fastdtw accept float32
@@ -135,5 +151,54 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
     # interpolating
     new_ons = np.interp(misaligned[:, 1], path[:, 0], path[:, 1])
     new_offs = np.interp(misaligned[:, 2], path[:, 0], path[:, 1])
+    new_ons += (start / sr)
+    new_offs += (start / sr)
 
     return new_ons, new_offs
+
+
+def match_pianorolls(pr1, pr2, max_dist, row_cost, lookup_range):
+    """
+    Arguments
+    ---------
+
+    `pr1` : np.ndarray
+        pianoroll 1
+
+    `pr2` : np.ndarray
+        pianoroll 2
+
+    `max_dist` : int
+        maximum distance for looking for a match (real maximum distance will be
+        max_dist + lookup_range)
+
+    `row_cost` : int
+        the cost with wich the distance will be divided to decide if max_dist
+        is reached along the row dimension
+
+    `lookup_range` : int
+        the maximum number of columns in pr2 that all together can create a
+        correspondance to a single column in pr1
+
+    """
+
+    for col1 in range(pr1.shape[1]):
+        if np.any(pr1[:, col1]):
+            # look for the nearest cols in pr2 which is equal to pr1
+            # previous match must be taken into account
+            for i in range(max_dist):
+                for col2 in [col1 + i, col1 - 1]:
+                    diff = pr1[:, col1] - pr2[col2:col2+lookup_range]
+                    if not np.any(diff):
+                        # this is the match!
+                        pass
+                        break
+            for i in range(max_dist):
+                for col2 in [col1 + i, col1 - 1]:
+                    if np.all(np.where(diff == 1)[0] - np.where(diff == -1)[0] <= max_dist / row_cost):
+                        # this is the match!
+                        pass
+                        break
+            # chose which match is the best
+
+    # return a map or similar

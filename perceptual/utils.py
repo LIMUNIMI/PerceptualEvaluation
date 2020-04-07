@@ -167,10 +167,9 @@ def midipath2mat(path):
     """
 
     out = []
-    notes = pm.PrettyMIDI(midi_file=path).instruments[0].notes
-
-    for note in notes:
-        out.append([note.pitch, note.start, note.end, note.velocity])
+    for instrument in pm.PrettyMIDI(midi_file=path).instruments:
+        for note in instrument.notes:
+            out.append([note.pitch, note.start, note.end, note.velocity])
 
     return np.array(out)
 
@@ -178,6 +177,7 @@ def midipath2mat(path):
 def make_pianoroll(mat,
                    res=0.25,
                    velocities=True,
+                   only_onsets=False,
                    basis=1,
                    attack=1,
                    basis_l=1):
@@ -186,6 +186,9 @@ def make_pianoroll(mat,
 
     if velocities are available, it will be filled with velocity values; to
     turn this off use `velocities=False`
+
+    if `only_onsets` is true, onle the attack is used and the other part of the
+    notes are discarded (useful for aligning with amt).
 
     `basis` is the number of basis for the nmf; `attack` is the attack
     duration, all other basis will be long `basis_l` column except the last one
@@ -226,8 +229,9 @@ def make_pianoroll(mat,
                 break
 
         # the ending part
-        if start + (basis - 1) * basis_l < end:
-            pr[pitch, basis - 1, start + (basis - 1) * basis_l:end] = vel
+        if not only_onsets:
+            if start + (basis - 1) * basis_l < end:
+                pr[pitch, basis - 1, start + (basis - 1) * basis_l:end] = vel
 
     # collapse pitch and basis dimension
     pr = pr.reshape((128 * basis, -1), order='C')
@@ -324,6 +328,10 @@ def evaluate2d(estimate, ground_truth):
     # sorting according to pitches and then onsets
     est_sorted = np.lexsort((estimate[:, 1], estimate[:, 0]))
     gt_sorted = np.lexsort((ground_truth[:, 1], ground_truth[:, 0]))
+
+    # make both of them start from 0
+    gt_sorted[:, 1:3] -= np.min(gt_sorted[:, 1])
+    est_sorted[:, 1:3] -= np.min(est_sorted[:, 1])
 
     # computing errors
     _err_ons = estimate[est_sorted, 1] - ground_truth[gt_sorted, 1]

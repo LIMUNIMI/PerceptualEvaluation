@@ -93,9 +93,7 @@ _____________
            the dataset of mini_specs or download it from out mega_. It contains
            506 297 mini spectrograms and uncompressed is large 8.2 GB (1.3 GB
            compressed).
-    #. [optional] if you need to run the code multiple times, I suggest to
-           first uncompress the dataset for speeding up the loading of the
-           data: ``unxz mini_specs.pkl.xz``
+    #. uncompress the dataset: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it; 
             #. Training set size: 354 500

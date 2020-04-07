@@ -12,11 +12,11 @@ SR = 22050
 #: duration of excerpts in seconds
 DURATION = 20
 #: percentage of hop-size for excerpt search
-HOP = 0.25
+HOP = 0.5
 #: number of parallele processes
 NJOBS = -1
-#: the number of excerpts per each question
-NUM_EXCERPTS = 6
+#: the number of excerpts per each question (without the central one)
+NUM_EXCERPTS = 4
 #: the number of questions
 QUESTIONS = 2
 
@@ -55,8 +55,9 @@ def main():
         for point in points[:, question]:
             path = dataset.paths[songs[point]][0]
             time = positions[point]
-            print(f"Song {path}, seconds {time[0][0]:.2f} - {time[0][1]:.2f} \
-    ...... {time[1][0]:.2f} - {time[1][1]:.2f}")
+            print(f"Song {path}, seconds audio\
+{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi\
+{time[1][0]:.2f} - {time[1][1]:.2f}")
 
     print(f"Total number of samples: {samples.shape[0]}")
 

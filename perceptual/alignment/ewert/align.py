@@ -7,6 +7,7 @@ from .dlnco.DLNCO import dlnco
 import os
 import essentia.standard as esst
 from .. import cdist
+from .. import utils
 
 
 # hack to let fastdtw accept float32
@@ -176,6 +177,10 @@ def audio_to_score_alignment(mat,
         a list of floats representing the new computed offsets
 
     """
+    start, stop = utils.find_start_stop(audio, sample_rate=sr)
+    audio = audio[start:stop]
+
+    mat[:, 1:3] -= np.min(mat[:, 1])
     # creating one track per each different program
     programs = np.unique(mat[:, 4])
     tracks = {}
@@ -205,5 +210,7 @@ def audio_to_score_alignment(mat,
     # interpolating
     new_ons = np.interp(mat[:, 1], path[:, 0], path[:, 1])
     new_offs = np.interp(mat[:, 2], path[:, 0], path[:, 1])
+    new_ons += (start / sr)
+    new_offs += (start / sr)
 
     return new_ons, new_offs
