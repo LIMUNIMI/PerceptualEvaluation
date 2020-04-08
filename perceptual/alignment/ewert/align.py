@@ -2,6 +2,7 @@ import numpy as np
 import pretty_midi
 from math import floor, log2
 import fastdtw
+# from librosa.sequence import dtw
 import librosa.display
 from .dlnco.DLNCO import dlnco
 import os
@@ -74,12 +75,18 @@ def multiple_audio_alignment(audio1,
     audio1_merge = audio1_chroma + audio1_dlnco if merge_dlnco else audio1_chroma
     audio2_merge = audio2_chroma + audio2_dlnco if merge_dlnco else audio2_chroma
 
+    # force exactly the same shape
+    L = min(audio1_merge.shape[1], audio2_merge.shape[1])
+    audio1_merge = audio1_merge[:, :L]
+    audio2_merge = audio2_merge[:, :L]
+
     # print("Starting DTW")
     # hack to let fastdtw accept float32
     fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
     _D, wp = fastdtw.fastdtw(audio1_merge.T.astype(np.float32),
                              audio2_merge.T.astype(np.float32),
-                             dist=cdist.cosine)
+                             dist=cdist.cosine,
+                             radius=10)
 
     return wp
 
@@ -177,10 +184,17 @@ def audio_to_score_alignment(mat,
         a list of floats representing the new computed offsets
 
     """
+    # removing trailing silence
     start, stop = utils.find_start_stop(audio, sample_rate=sr)
     audio = audio[start:stop]
 
     mat[:, 1:3] -= np.min(mat[:, 1])
+
+    # force input duration to last as audio
+    audio_duration = (stop - start) / sr
+    mat_duration = np.max(mat[:, 2])
+    mat[:, 1:3] *= (audio_duration / mat_duration)
+
     # creating one track per each different program
     programs = np.unique(mat[:, 4])
     tracks = {}

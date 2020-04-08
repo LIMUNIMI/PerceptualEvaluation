@@ -109,8 +109,10 @@ def transcription(audio, sr, res=0.02, cuda=False):
 
     assert len(prediction_list) == 1
 
-    frame_predictions = prediction_list[0]['frame_predictions'][0].astype(np.float)
-    frame_predictions += prediction_list[0]['onset_predictions'][0].astype(np.float)
+    frame_predictions = prediction_list[0]['frame_predictions'][0].astype(
+        np.float)
+    frame_predictions += prediction_list[0]['onset_predictions'][0].astype(
+        np.float)
 
     # convert to pianoroll with resolution `res`
     n_cols = round(len(audio) / sr / res)
@@ -121,19 +123,23 @@ def transcription(audio, sr, res=0.02, cuda=False):
 
 
 def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
+    # removing trailing silence
     start, stop = utils.find_start_stop(audio, sample_rate=sr)
     audio = audio[start:stop]
-    audio_features = transcription(audio, sr, res) + EPS
 
     misaligned[:, 1:3] -= np.min(misaligned[:, 1])
+
     # force input duration to last as audio
     audio_duration = (stop - start) / sr
     misaligned_duration = np.max(misaligned[:, 2])
     misaligned[:, 1:3] *= (audio_duration / misaligned_duration)
 
+    # computing features
+    audio_features = transcription(audio, sr, res) + EPS
     pianoroll = utils.make_pianoroll(
         misaligned, res=res, velocities=False, only_onsets=True) + EPS
-    pianoroll += utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
+    pianoroll += utils.make_pianoroll(misaligned, res=res,
+                                      velocities=False) + EPS
 
     # force exactly the same shape
     L = min(pianoroll.shape[1], audio_features.shape[1])
@@ -145,8 +151,8 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
     fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
     _D, path = fastdtw.fastdtw(pianoroll.astype(np.float32).T,
                                audio_features.astype(np.float32).T,
-                               dist=cdist.correlation,
-                               radius=1)
+                               dist=cdist.cosine,
+                               radius=10)
     path = np.array(path) * res
 
     # interpolating
@@ -177,6 +183,8 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
 
 def match_pianorolls(pr1, pr2, max_dist, row_cost, lookup_range):
     """
+    Maybe in future... something like object tracking
+
     Arguments
     ---------
 

@@ -10,11 +10,11 @@ import random
 
 N_JOBS = -4
 DISTS = [
-    'euclidean', 'cosine', 'canberra', 'chebyshev', 'braycurtis',
+    'cosine', 'euclidean', 'canberra', 'chebyshev', 'braycurtis',
     'correlation', 'manhattan'
 ]
 RADIUS_DTW = [0.01, 0.2, 0.5, 1.0]
-RADIUS_FASTDTW = [1, 5, 10]
+RADIUS_FASTDTW = [5, 10, 20]
 RES = 0.02
 FASTDTW = True
 NUM_SONGS = 160
