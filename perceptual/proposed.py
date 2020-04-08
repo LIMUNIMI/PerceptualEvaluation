@@ -15,18 +15,17 @@ import pretty_midi
 import random
 from tqdm import tqdm
 
-
 MINI_SPEC_PATH = 'mini_specs.pkl'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
-NJOBS = 4
-EPS_ACTIVATIONS = 1e-4
+NJOBS = 1
+EPS_ACTIVATIONS = 0
 NUM_SONGS_FOR_TRAINING = 80
 EPOCHS = 100
 BATCH_SIZE = 100
-EARLY_STOP = 5
+EARLY_STOP = 10
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -111,19 +110,20 @@ def transcribe(audio,
     # perform nfm
     NMF(V, initW, initH, B=BASIS, num_iter=10, cost_func=COST_FUNC)
 
-    NMF(V, initW, initH, B=BASIS, num_iter=2, cost_func=COST_FUNC, fixW=True)
+    # NMF(V, initW, initH, B=BASIS, num_iter=2, cost_func=COST_FUNC, fixW=True)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
     mini_specs = []
     npitch = maxpitch - minpitch + 1
+    __import__('ipdb').set_trace()
     initH = initH.reshape(npitch, BASIS, -1)
     initW = initW.reshape((-1, npitch, BASIS), order='C')
     for note in score:
         # extract mini-spectrogram
         mini_spec = np.zeros((initW.shape[0], MINI_SPEC_SIZE))
-        start = max(0, int((note[1] - 0.05) / res))
-        end = min(initH.shape[2], int((note[2] + 0.05) / res) + 1)
+        start = max(0, int(note[1] / res))
+        end = min(initH.shape[2], int(note[2] / res))
         if end - start <= 1:
             note[3] = 63
             # mini_specs.append(None)
@@ -135,7 +135,7 @@ def transcribe(audio,
         m = np.argmax(np.sum(_mini_spec, axis=0))
 
         # segment the window so that the position of the MEF is significant in
-        # the input mini-spec
+        # the input mini-spec for inferring the duration of the note
         start = m - MINI_SPEC_SIZE // 2
         if start < 0:
             begin_pad = -start
@@ -234,23 +234,38 @@ class VelocityEstimation(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.5),
-                                    nn.Conv2d(1, 128, 4, (2, 1)), nn.ReLU(),
-                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
-                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
-                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU(),
-                                    nn.Conv2d(128, 128, 4, (2, 1)), nn.ReLU())
-        self.end = nn.Sequential(nn.Linear(5, 1), nn.Softmax(dim=1))
+        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
+                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
+                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
+                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
+                                    nn.Conv2d(1, 128, (4, 5), (2, 1)), nn.SELU())
+        self.process = nn.Sequential(
+            nn.Linear(16, 1), nn.SELU())
+        self.end = nn.Sequential(
+            nn.Linear(128, 128, bias=False), nn.SELU(),
+            nn.Linear(128, 128, bias=False), nn.Softmax(dim=1))
+
+        self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 
     def forward(self, x):
 
-        x = self.encode(x)[:, :, 0, :]
-        x = self.end(x)[:, :, 0]
+        x = self.encode(x).reshape(x.shape[0], 128, -1)
+        x = self.process(x)[:, :, 0]
+        x = self.end(x)[:, :]
         return x
 
     def predict(self, x):
         x = self.forward(x)
         return torch.argmax(x, dim=1)
+
+
+def init_weights(m, initializer):
+    if hasattr(m, "weight"):
+        if m.weight is not None:
+            w = m.weight.data
+            if w.dim() < 2:
+                w = w.unsqueeze(0)
+            initializer(w)
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -323,7 +338,7 @@ def train(data):
 
             optim.zero_grad()
             out = model(inputs)
-            loss = F.binary_cross_entropy(out, targets)
+            loss = F.l1_loss(out, targets)
             loss.backward()
             optim.step()
             trainloss.append(loss.detach().cpu().numpy())
@@ -354,6 +369,7 @@ def train(data):
     # saving params
     model.load_state_dict(best_params)
     pickle.dump(model.to('cpu').state_dict(), open(VELOCITY_MODEL_PATH, 'wb'))
+    model.to(DEVICE)
 
     # testing
     print("-> Testing")
