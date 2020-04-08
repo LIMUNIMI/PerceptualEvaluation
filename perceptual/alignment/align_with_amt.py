@@ -109,14 +109,14 @@ def transcription(audio, sr, res=0.02, cuda=False):
 
     assert len(prediction_list) == 1
 
-    # frame_predictions = prediction_list[0]['frame_predictions'][0]
-    frame_predictions = prediction_list[0]['onset_predictions'][0]
+    frame_predictions = prediction_list[0]['frame_predictions'][0].astype(np.float)
+    frame_predictions += prediction_list[0]['onset_predictions'][0].astype(np.float)
 
     # convert to pianoroll with resolution `res`
     n_cols = round(len(audio) / sr / res)
     frame_predictions = utils.stretch_pianoroll(frame_predictions.T, n_cols)
     pr = np.zeros((128, n_cols))
-    pr[START_NOTE:START_NOTE+88] = frame_predictions
+    pr[START_NOTE:START_NOTE + 88] = frame_predictions
     return pr
 
 
@@ -130,27 +130,45 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
     audio_duration = (stop - start) / sr
     misaligned_duration = np.max(misaligned[:, 2])
     misaligned[:, 1:3] *= (audio_duration / misaligned_duration)
-    pianoroll = utils.make_pianoroll(misaligned, res=res, velocities=False,
-                                     only_onsets=True) + EPS
-    # pianoroll = utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
-    import visdom
-    vis = visdom.Visdom()
-    vis.heatmap(pianoroll)
-    vis.heatmap(audio_features)
-    __import__('ipdb').set_trace()
+
+    pianoroll = utils.make_pianoroll(
+        misaligned, res=res, velocities=False, only_onsets=True) + EPS
+    pianoroll += utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
+
+    # force exactly the same shape
+    L = min(pianoroll.shape[1], audio_features.shape[1])
+    pianoroll = pianoroll[:, :L]
+    audio_features = audio_features[:, :L]
 
     # parameters for dtw were chosen with midi2midi on musicnet (see dtw_tuning)
     # hack to let fastdtw accept float32
     fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
     _D, path = fastdtw.fastdtw(pianoroll.astype(np.float32).T,
                                audio_features.astype(np.float32).T,
-                               dist=cdist.cosine,
+                               dist=cdist.correlation,
                                radius=1)
     path = np.array(path) * res
 
     # interpolating
     new_ons = np.interp(misaligned[:, 1], path[:, 0], path[:, 1])
     new_offs = np.interp(misaligned[:, 2], path[:, 0], path[:, 1])
+
+    # DEBUG
+    # misaligned[:, 1] = new_ons
+    # misaligned[:, 2] = new_offs
+    # pr_after = utils.make_pianoroll(
+    #     misaligned, res=res, velocities=False, only_onsets=True) + EPS
+    # pr_after += utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
+    # import visdom
+    # vis = visdom.Visdom()
+    # vis.heatmap(pianoroll, opts={"title": "pianoroll"})
+    # vis.heatmap(pr_after, opts={"title": "pr_after"})
+    # vis.heatmap(audio_features, opts={"title": "audio"})
+    # vis.heatmap(pr_after - audio_features, opts={"title": "pr_after-audio"})
+    # vis.heatmap(pianoroll - audio_features, opts={"title": "pianoroll - audio"})
+    # vis.heatmap(pianoroll - pr_after, opts={"title": "pianoroll - pr_after"})
+    # __import__('ipdb').set_trace()
+
     new_ons += (start / sr)
     new_offs += (start / sr)
 
@@ -188,14 +206,16 @@ def match_pianorolls(pr1, pr2, max_dist, row_cost, lookup_range):
             # previous match must be taken into account
             for i in range(max_dist):
                 for col2 in [col1 + i, col1 - 1]:
-                    diff = pr1[:, col1] - pr2[col2:col2+lookup_range]
+                    diff = pr1[:, col1] - pr2[col2:col2 + lookup_range]
                     if not np.any(diff):
                         # this is the match!
                         pass
                         break
             for i in range(max_dist):
                 for col2 in [col1 + i, col1 - 1]:
-                    if np.all(np.where(diff == 1)[0] - np.where(diff == -1)[0] <= max_dist / row_cost):
+                    if np.all(
+                            np.where(diff == 1)[0] -
+                            np.where(diff == -1)[0] <= max_dist / row_cost):
                         # this is the match!
                         pass
                         break

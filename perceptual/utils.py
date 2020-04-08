@@ -330,8 +330,8 @@ def evaluate2d(estimate, ground_truth):
     gt_sorted = np.lexsort((ground_truth[:, 1], ground_truth[:, 0]))
 
     # make both of them start from 0
-    gt_sorted[:, 1:3] -= np.min(gt_sorted[:, 1])
-    est_sorted[:, 1:3] -= np.min(est_sorted[:, 1])
+    estimate[:, 1:3] -= np.min(estimate[:, 1])
+    ground_truth[:, 1:3] -= np.min(ground_truth[:, 1])
 
     # computing errors
     _err_ons = estimate[est_sorted, 1] - ground_truth[gt_sorted, 1]

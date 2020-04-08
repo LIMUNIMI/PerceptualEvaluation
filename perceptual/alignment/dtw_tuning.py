@@ -15,7 +15,7 @@ DISTS = [
 ]
 RADIUS_DTW = [0.01, 0.2, 0.5, 1.0]
 RADIUS_FASTDTW = [1, 5, 10]
-RES = 0.1
+RES = 0.02
 FASTDTW = True
 NUM_SONGS = 160
 EPS = 1e-15
@@ -28,19 +28,26 @@ def _my_prep_inputs(x, y, dist):
 
 def evaluate(i, dataset, dist, radius, use_fastdtw=False):
 
-    aligned = dataset.get_score(i, score_type=['precise_alignment', 'broad_alignment'])
+    aligned = dataset.get_score(
+        i, score_type=['precise_alignment', 'broad_alignment'])
     misaligned = dataset.get_score(i, score_type=['non_aligned'])
     errors = np.abs(np.vstack(utils.evaluate2d(misaligned, aligned)))
 
-    pr_aligned = utils.make_pianoroll(aligned, res=RES,
-                                      velocities=False).astype(np.float32)
-    pr_misaligned = utils.make_pianoroll(misaligned, res=RES,
-                                         velocities=False).astype(np.float32)
+    pr_aligned = utils.make_pianoroll(
+        aligned, res=RES, velocities=False, only_onsets=True) + EPS
+    pr_aligned += utils.make_pianoroll(aligned, res=RES,
+                                       velocities=False) + EPS
+    pr_misaligned = utils.make_pianoroll(
+        misaligned, res=RES, velocities=False, only_onsets=True) + EPS
+    pr_misaligned += utils.make_pianoroll(
+        misaligned, res=RES, velocities=False) + EPS
 
     if not use_fastdtw:
         # computing distance matrix with float32 and thread parallelization
         # (cython)
-        dist_matrix = cdist.cdist(pr_aligned, pr_misaligned, metric=dist)
+        dist_matrix = cdist.cdist(pr_aligned.astype(np.float32),
+                                  pr_misaligned.astype(np.float32),
+                                  metric=dist)
         # this isn't thread parallelizing...
         _D, path = dtw(C=dist_matrix, global_constraints=True, band_rad=radius)
         path = path[::-1]
@@ -48,8 +55,8 @@ def evaluate(i, dataset, dist, radius, use_fastdtw=False):
         # hack to let fastdtw accept float32
         fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
         dist = getattr(cdist, dist)
-        _D, path = fastdtw.fastdtw(pr_aligned.T,
-                                   pr_misaligned.T,
+        _D, path = fastdtw.fastdtw(pr_aligned.astype(np.float32).T,
+                                   pr_misaligned.astype(np.float32).T,
                                    dist=dist,
                                    radius=radius)
         path = np.array(path)
