@@ -136,10 +136,10 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
 
     # computing features
     audio_features = transcription(audio, sr, res) + EPS
-    pianoroll = utils.make_pianoroll(
-        misaligned, res=res, velocities=False, only_onsets=True) + EPS
-    pianoroll += utils.make_pianoroll(misaligned, res=res,
+    pianoroll = utils.make_pianoroll(misaligned, res=res,
                                       velocities=False) + EPS
+    pianoroll += utils.make_pianoroll(
+        misaligned, res=res, velocities=False, only_onsets=True)
 
     # force exactly the same shape
     L = min(pianoroll.shape[1], audio_features.shape[1])

@@ -17,6 +17,8 @@ Environment
 #. ``cd <repo>``
 #. ``pyenv local 3.6.9``
 #. ``poetry install``
+#. ``pip install madmom -c constraints.txt`` (this is needed because google sucks and has an exact
+   dependency for an old mido version in its requirements.txt)
 
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from ``asmd``
 package:

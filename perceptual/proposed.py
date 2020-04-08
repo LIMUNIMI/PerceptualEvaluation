@@ -15,6 +15,7 @@ import pretty_midi
 import random
 from tqdm import tqdm
 
+
 MINI_SPEC_PATH = 'mini_specs.pkl'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
@@ -25,6 +26,7 @@ EPS_ACTIVATIONS = 1e-4
 NUM_SONGS_FOR_TRAINING = 80
 EPOCHS = 100
 BATCH_SIZE = 100
+EARLY_STOP = 5
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -257,7 +259,7 @@ class Dataset(torch.utils.data.Dataset):
         self.inputs = torch.tensor(inputs).to(torch.float).to(DEVICE)
         self.targets = torch.zeros(len(targets),
                                    128).to(torch.float).to(DEVICE)
-        self.targets[:, targets] = 1
+        self.targets[torch.arange(len(targets)), targets] = 1
         assert len(self.inputs) == len(self.targets),\
             "inputs and targets must have the same length!"
 
@@ -345,7 +347,7 @@ def train(data):
             best_loss = validloss
             best_epoch = epoch
             best_params = model.state_dict()
-        elif epoch - best_epoch > 10:
+        elif epoch - best_epoch > EARLY_STOP:
             print("-- Early stop! --")
             break
 

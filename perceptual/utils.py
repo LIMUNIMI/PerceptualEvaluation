@@ -178,6 +178,7 @@ def make_pianoroll(mat,
                    res=0.25,
                    velocities=True,
                    only_onsets=False,
+                   only_offsets=False,
                    basis=1,
                    attack=1,
                    basis_l=1):
@@ -188,7 +189,7 @@ def make_pianoroll(mat,
     turn this off use `velocities=False`
 
     if `only_onsets` is true, onle the attack is used and the other part of the
-    notes are discarded (useful for aligning with amt).
+    notes are discarded (useful for aligning with amt). Similarly `only_offsets`
 
     `basis` is the number of basis for the nmf; `attack` is the attack
     duration, all other basis will be long `basis_l` column except the last one
@@ -209,6 +210,10 @@ def make_pianoroll(mat,
             vel = max(1, vel)
         else:
             vel = 1
+
+        if only_offsets:
+            pr[pitch, basis-1, end-1] = vel
+            continue
 
         # the attack basis
         pr[pitch, 0, start:start + attack] = vel
