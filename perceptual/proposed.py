@@ -20,12 +20,15 @@ MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
-NJOBS = 1
-EPS_ACTIVATIONS = 0
-NUM_SONGS_FOR_TRAINING = 80
-EPOCHS = 100
+NJOBS = 8
+EPS_ACTIVATIONS = 1e-6
+NUM_SONGS_FOR_TRAINING = 200
+EPOCHS = 500
 BATCH_SIZE = 100
 EARLY_STOP = 10
+# TODO channels
+BRANCHES = 16
+DATASET_LEN = 1  # use this for debugging
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -108,46 +111,47 @@ def transcribe(audio,
     initH[initH == 0] = EPS_ACTIVATIONS
 
     # perform nfm
-    NMF(V, initW, initH, B=BASIS, num_iter=10, cost_func=COST_FUNC)
+    NMF(V, initW, initH, B=BASIS, num_iter=5, cost_func=COST_FUNC)
 
-    # NMF(V, initW, initH, B=BASIS, num_iter=2, cost_func=COST_FUNC, fixW=True)
+    NMF(V, initW, initH, B=BASIS, num_iter=5, cost_func=COST_FUNC, fixW=True)
 
     # use the updated H and W for computing mini-spectrograms
     # and predict velocities
     mini_specs = []
     npitch = maxpitch - minpitch + 1
-    __import__('ipdb').set_trace()
     initH = initH.reshape(npitch, BASIS, -1)
     initW = initW.reshape((-1, npitch, BASIS), order='C')
+    # removing existing velocities
+    score[:, 3] = -255
     for note in score:
         # extract mini-spectrogram
-        mini_spec = np.zeros((initW.shape[0], MINI_SPEC_SIZE))
+
+        # look for the maximum value in initH in the note
         start = max(0, int(note[1] / res))
         end = min(initH.shape[2], int(note[2] / res))
-        if end - start <= 1:
+
+        if end - start < 1:
             note[3] = 63
-            # mini_specs.append(None)
+            mini_specs.append(None)
             continue
-        _mini_spec = initW[:, int(note[0] - minpitch), :] @\
+
+        m = np.argmax(
+            np.max(initH[int(note[0] - minpitch), :, start:end],
+                   axis=0)) + start
+
+        # select the sorrounding space in initH
+        start = max(0, m - MINI_SPEC_SIZE // 2)
+        end = min(start + MINI_SPEC_SIZE, initH.shape[2])
+
+        if end - start < MINI_SPEC_SIZE:
+            note[3] = 63
+            mini_specs.append(None)
+            continue
+
+        # compute the mini_spec
+        mini_spec = initW[:, int(note[0] - minpitch), :] @\
             initH[int(note[0] - minpitch), :, start:end]
 
-        # looking for the frame with maximum energy (MEF)
-        m = np.argmax(np.sum(_mini_spec, axis=0))
-
-        # segment the window so that the position of the MEF is significant in
-        # the input mini-spec for inferring the duration of the note
-        start = m - MINI_SPEC_SIZE // 2
-        if start < 0:
-            begin_pad = -start
-            start = 0
-        else:
-            begin_pad = 0
-        end = min(m + MINI_SPEC_SIZE // 2 + 1, _mini_spec.shape[1])
-        end_pad = end - start + begin_pad
-        if end_pad > MINI_SPEC_SIZE:
-            end = end - (end_pad - MINI_SPEC_SIZE)
-            end_pad = MINI_SPEC_SIZE
-        mini_spec[:, begin_pad:end_pad] += _mini_spec[:, start:end]
         # normalizing with rms
         mini_spec /= (mini_spec**2).mean()**0.5
 
@@ -156,10 +160,13 @@ def transcribe(audio,
     if return_mini_specs:
         return mini_specs
     else:
+        # remove nans...
+        mini_specs = [i for i in mini_specs if i is not None]
         # numpy to torch and add channel dimensions
         mini_specs = torch.tensor(mini_specs).to(DEVICE).to(
             torch.float).unsqueeze(1)
-        vels = velocity_model(mini_specs)
+        with torch.no_grad():
+            vels = velocity_model(mini_specs)
         score[score[:, 3] != 63, 3] = vels.cpu().numpy()
         return score, V, initW, initH
 
@@ -231,37 +238,73 @@ def create_mini_specs(data):
 
 
 class VelocityEstimation(nn.Module):
-    def __init__(self):
+
+    def __init__(self, in_numel=2000, branches=BRANCHES, k=2):
         super().__init__()
 
-        self.encode = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.25),
-                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
-                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
-                                    nn.Conv2d(1, 1, (4, 5), (2, 1)), nn.SELU(),
-                                    nn.Conv2d(1, 128, (4, 5), (2, 1)), nn.SELU())
-        self.process = nn.Sequential(
-            nn.Linear(16, 1), nn.SELU())
-        self.end = nn.Sequential(
-            nn.Linear(128, 128, bias=False), nn.SELU(),
-            nn.Linear(128, 128, bias=False), nn.Softmax(dim=1))
+        # TODO Dropout
+        self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.4))
 
-        self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
+        self.in_numel = in_numel
+        self.branches = branches
+        self.k = k
+
+        self.process = nn.ModuleList()
+
+        for i in range(branches):
+            self.process.append(nn.Sequential(
+                nn.Linear(in_numel, k, bias=True), nn.SELU()
+            ))
+
+        self.finalize = nn.Sequential(
+            # TODO
+            # nn.BatchNorm1d(branches * k),
+            # TODO 3
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            # TODO Sigmoid -> SELU
+            nn.Linear(branches * k, 1, bias=False), nn.Sigmoid())
+
+        # self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 
     def forward(self, x):
 
-        x = self.encode(x).reshape(x.shape[0], 128, -1)
-        x = self.process(x)[:, :, 0]
-        x = self.end(x)[:, :]
-        return x
+        # preprocess
+        x = self.preprocess(x).reshape(x.shape[0], -1)
+
+        # process each velocity range
+        y = torch.zeros(
+            x.shape[0], self.branches, self.k).to(x.dtype).to(x.device)
+        for i in range(self.branches):
+            y[:, i, :] = self.process[i](x)
+
+        # apply softmax so that only the first output is a probability (classification)
+        middle_out = F.softmax(y[:, :, 0], dim=1)
+
+        # finalize takes as input the concatenation of all the features of previous layers
+        if self.k > 1:
+            x = torch.cat([y[..., i] for i in range(1, self.k)], dim=1)
+            x = torch.cat([middle_out, x], dim=1)
+        else:
+            x = middle_out
+        x = self.finalize(x)[:, 0] * 127
+
+        return x, middle_out
 
     def predict(self, x):
-        x = self.forward(x)
-        return torch.argmax(x, dim=1)
+        x = self.forward(x)[0]
+        return x
+        # return torch.argmax(x, dim=1)
 
 
 def init_weights(m, initializer):
     if hasattr(m, "weight"):
         if m.weight is not None:
+
             w = m.weight.data
             if w.dim() < 2:
                 w = w.unsqueeze(0)
@@ -269,17 +312,18 @@ def init_weights(m, initializer):
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, inputs, targets):
+    def __init__(self, inputs, targets, branches=BRANCHES):
         super().__init__()
         self.inputs = torch.tensor(inputs).to(torch.float).to(DEVICE)
-        self.targets = torch.zeros(len(targets),
-                                   128).to(torch.float).to(DEVICE)
-        self.targets[torch.arange(len(targets)), targets] = 1
+        self.targets = torch.tensor(targets).to(torch.float).to(DEVICE)
+        self.targets_middle = torch.zeros(len(targets),
+                                          branches).to(torch.float).to(DEVICE)
+        self.targets_middle[torch.arange(len(targets)), targets % branches] = 1
         assert len(self.inputs) == len(self.targets),\
             "inputs and targets must have the same length!"
 
     def __getitem__(self, i):
-        return self.inputs[i], self.targets[i]
+        return self.inputs[i], self.targets[i], self.targets_middle[i]
 
     def __len__(self):
         return len(self.inputs)
@@ -295,12 +339,9 @@ def train(data):
     print("Building model...")
     model = VelocityEstimation().to(DEVICE)
     print(model)
-    for i in inputs:
-        if i is None:
-            raise Exception("Dataset contains nones...")
 
     # shuffle and split
-    indices = list(range(len(inputs)))
+    indices = list(range(len(inputs) // DATASET_LEN))
     random.seed(1998)
     random.shuffle(indices)
     inputs = np.array(inputs)
@@ -315,14 +356,17 @@ def train(data):
     test_y = targets[indices[-test_size:]]
 
     # creating loaders
-    trainloader = torch.utils.data.DataLoader(Dataset(train_x, train_y),
+    trainloader = torch.utils.data.DataLoader(Dataset(train_x, train_y,
+                                                      BRANCHES),
                                               batch_size=BATCH_SIZE)
-    validloader = torch.utils.data.DataLoader(Dataset(valid_x, valid_y),
+    validloader = torch.utils.data.DataLoader(Dataset(valid_x, valid_y,
+                                                      BRANCHES),
                                               batch_size=BATCH_SIZE)
-    testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y),
+    testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y, BRANCHES),
                                              batch_size=BATCH_SIZE)
 
-    optim = torch.optim.Adadelta(model.parameters())
+    # TODO lr
+    optim = torch.optim.Adadelta(model.parameters(), lr=1e-2)
 
     best_epoch = 0
     best_params = None
@@ -332,25 +376,30 @@ def train(data):
         trainloss, validloss = [], []
         print("-> Training")
         model.train()
-        for inputs, targets in tqdm(trainloader):
+        for inputs, targets, targets_middle in tqdm(trainloader):
             inputs = inputs.to(DEVICE).unsqueeze(1)
             targets = targets.to(DEVICE)
+            targets_middle = targets_middle.to(DEVICE)
 
             optim.zero_grad()
-            out = model(inputs)
-            loss = F.l1_loss(out, targets)
+            out, middle_out = model(inputs)
+            bce_loss = F.binary_cross_entropy(middle_out, targets_middle)
+            l1_loss = F.l1_loss(out, targets)
+            # loss = l1_loss
+            loss = bce_loss + l1_loss
             loss.backward()
             optim.step()
-            trainloss.append(loss.detach().cpu().numpy())
+            trainloss.append(l1_loss.detach().cpu().numpy())
 
         print(f"training loss : {np.mean(trainloss)}")
 
         print("-> Validating")
         with torch.no_grad():
             model.eval()
-            for inputs, targets in tqdm(validloader):
+            for inputs, targets, _ in tqdm(validloader):
                 inputs = inputs.unsqueeze(1)
-                targets = torch.argmax(targets, dim=1).to(torch.float)
+                targets = targets.to(DEVICE)
+                # targets = torch.argmax(targets, dim=1).to(torch.float)
 
                 out = model.predict(inputs).to(torch.float)
                 loss = torch.abs(targets - out)
@@ -376,9 +425,10 @@ def train(data):
     testloss = []
     with torch.no_grad():
         model.eval()
-        for inputs, targets in tqdm(testloader):
+        for inputs, targets, _ in tqdm(testloader):
             inputs = inputs.unsqueeze(1)
-            targets = torch.argmax(targets, dim=1).to(torch.float)
+            targets = targets.to(DEVICE)
+            # targets = torch.argmax(targets, dim=1).to(torch.float)
 
             out = model.predict(inputs).to(torch.float)
             loss = torch.abs(targets - out)
@@ -415,6 +465,10 @@ if __name__ == '__main__':
         velocity_model = VelocityEstimation().to(DEVICE)
         velocity_model.load_state_dict(
             pickle.load(open(VELOCITY_MODEL_PATH, 'rb')))
+        velocity_model.eval()
         predict_func = velocity_model.predict
-        transcribe_from_paths(sys.argv[1], sys.argv[2], data, predict_func,
+        transcribe_from_paths(sys.argv[1],
+                              sys.argv[2],
+                              data,
+                              predict_func,
                               tofile=sys.argv[3])
