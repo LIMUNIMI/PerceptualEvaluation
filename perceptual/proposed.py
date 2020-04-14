@@ -3,7 +3,7 @@ from .nmf import NMF
 from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
 from .make_template import BASIS, FRAME_SIZE, ATTACK, BINS
 from .utils import make_pianoroll, find_start_stop, midipath2mat
-from .utils import stretch_pianoroll
+from .utils import stretch_pianoroll, mat2midipath
 import pickle
 import torch
 import torch.nn.functional as F
@@ -186,15 +186,8 @@ def transcribe_from_paths(audio_path,
     score = midipath2mat(midi_score_path)
     new_score, _, _, _ = transcribe(audio, score, data, velocity_model)
 
-    # creating pretty_midi.PrettyMIDI object and inserting notes
-    midi = pretty_midi.PrettyMIDI()
-    midi.instruments = [pretty_midi.Instrument(0)]
-    for row in new_score:
-        midi.instruments[0].notes.append(
-            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
-
-    # writing to file
-    midi.write(tofile)
+    # writing to midi
+    mat2midipath(new_score, tofile)
     return new_score
 
 
@@ -439,6 +432,13 @@ def train(data):
         )
 
 
+def get_default_predict_func():
+    velocity_model = VelocityEstimation().to(DEVICE)
+    velocity_model.load_state_dict(
+        pickle.load(open(VELOCITY_MODEL_PATH, 'rb')))
+    velocity_model.eval()
+    return velocity_model.predict
+
 def show_usage():
     print(
         f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path] [--cpu]"
@@ -462,11 +462,7 @@ if __name__ == '__main__':
         if '--cpu' in sys.argv:
             DEVICE = 'cpu'
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        velocity_model = VelocityEstimation().to(DEVICE)
-        velocity_model.load_state_dict(
-            pickle.load(open(VELOCITY_MODEL_PATH, 'rb')))
-        velocity_model.eval()
-        predict_func = velocity_model.predict
+        
         transcribe_from_paths(sys.argv[1],
                               sys.argv[2],
                               data,

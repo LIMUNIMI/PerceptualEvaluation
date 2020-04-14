@@ -168,6 +168,23 @@ def specframe2sample(frame, hop_size=3072, win_len=4096):
     return frame * hop_size + win_len / 2
 
 
+def mat2midipath(mat, path):
+    """
+    Writes a midi file from a mat like asmd:
+
+    pitch, start (sec), end (sec), velocity
+    """
+    # creating pretty_midi.PrettyMIDI object and inserting notes
+    midi = pretty_midi.PrettyMIDI()
+    midi.instruments = [pretty_midi.Instrument(0)]
+    for row in mat:
+        midi.instruments[0].notes.append(
+            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
+
+    # writing to file
+    midi.write(path)
+
+
 def midipath2mat(path):
     """
     Open a midi file  with one instrument track and construct a mat like asmd:
