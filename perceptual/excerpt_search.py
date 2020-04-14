@@ -3,6 +3,7 @@ import essentia.standard as es
 from .utils import farthest_points, find_start_stop
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from scipy.spatial.distance import pdist, squareform
 from asmd.audioscoredataset import Dataset
 
 #: duration of each pianoroll column in seconds
@@ -18,7 +19,7 @@ NJOBS = -1
 #: the number of excerpts per each question (without the central one)
 NUM_EXCERPTS = 4
 #: the number of questions
-QUESTIONS = 2
+QUESTIONS = 1
 
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
@@ -55,10 +56,17 @@ def main():
         for point in points[:, question]:
             path = dataset.paths[songs[point]][0]
             time = positions[point]
-            print(f"Song {path}, seconds audio\
-{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi\
+            print(f"Song {path}, seconds audio \
+{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
 {time[1][0]:.2f} - {time[1][1]:.2f}")
 
+    distmat = squareform(pdist(samples))
+    medoid = np.argmin(np.sum(distmat, axis=1))
+    path = dataset.paths[songs[medoid]][0]
+    time = positions[medoid]
+    print(f"The medoid of the whole set is: {path}, seconds audio \
+{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
+{time[1][0]:.2f} - {time[1][1]:.2f}")
     print(f"Total number of samples: {samples.shape[0]}")
 
 

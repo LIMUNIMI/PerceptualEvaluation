@@ -43,6 +43,7 @@ def farthest_points(samples, k, n, optimize=False):
     """
     assert samples.shape[0] > k, "samples cardinality < k"
 
+    # 1. Clusterize
     if optimize:
         linkage_func = linkage_vector
     else:
@@ -50,17 +51,25 @@ def farthest_points(samples, k, n, optimize=False):
     Z = linkage_func(samples, method='ward')
     clusters = fcluster(Z, k, criterion='maxclust')
 
+    # 2. For each cluster chose n points
     out = np.empty((k, n), dtype=np.int64)
     for i in range(k):
         kth_cluster = samples[clusters == i + 1]
         kth_cluster_indices = np.where(clusters == i + 1)[0]
-        others_centroid = np.empty_like(kth_cluster)
 
+        # for each point in the cluster, we compute the centroid of the whole
+        # set minus that point:
+        others_centroid = np.empty_like(kth_cluster)
         for l, j in enumerate(kth_cluster_indices):
             others = np.concatenate((samples[:j], samples[j + 1:]))
             others_centroid[l] = np.mean(others, axis=0)
 
-        # np.partition returns an array with the `-n`-th element in the
+        # now we compute the distance from each point of the cluster and the
+        # centroid of their complementary set; then, we take the n largest
+        # values, that is: the n points that are most distant from the centroid
+        # of their complementary set.
+
+        # N.B. np.partition returns an array with the `-n`-th element in the
         # position it would be if sorted and all larger value after it (not
         # sorted, though
         kth_cluster_points = np.argpartition(
@@ -70,11 +79,11 @@ def farthest_points(samples, k, n, optimize=False):
     np.random.shuffle(out.T)
 
     if PLOT:
-        from scipy.spatial.distance import pdist, squareform
         import visdom
-        vis = visdom.Visdom()
+        from scipy.spatial.distance import pdist, squareform
         mat = squareform(pdist(samples))
         m = np.argsort(np.sum(mat, axis=1))[-k:]
+        vis = visdom.Visdom()
         vis.heatmap(mat)
         win = vis.scatter(X=samples, Y=clusters, opts={"markersize": 5})
         vis.scatter(X=samples[out[:, 0]],

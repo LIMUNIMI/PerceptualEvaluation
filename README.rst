@@ -93,14 +93,13 @@ _____________
            and ``audio`` folder. You can download them from our mega_
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_. It contains
-           506 297 mini spectrograms and uncompressed is large 8.2 GB (1.3 GB
-           compressed).
+           915 039 mini spectrograms and uncompressed is large 14 GB.
     #. uncompress the dataset: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it; 
-            #. Training set size: 354 500
-            #. Validation and test set size: 76 000
-            #. Final test absolute error (avg, std): 6.2e-2, 1.25e-1 (25 epochs)
+            #. Training set size: 640 600
+            #. Validation and test set size: 137 300
+            #. Final test absolute error (avg, std): 14.73, 10.91 (130 epochs)
 
 #. To run the objective evaluation use
 
