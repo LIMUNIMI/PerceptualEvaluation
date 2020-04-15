@@ -84,8 +84,8 @@ if __name__ == '__main__':
         print("Plotting...")
         df = pd.concat(
             {
-                'ons': values_ons,
-                'offs': values_offs,
+                # 'ons': values_ons,
+                # 'offs': values_offs,
                 'both': values_both
             },
             axis=1)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         })
 
         df['Method'] = df['Method'] + ' ' + df['Type']
-        df['Time (s)'] = np.hstack([th.values for i in range(len(files) * 3)])
+        df['Time (s)'] = np.hstack([th.values for i in range(len(files))])
 
         fig = px.line(df,
                       x='Time (s)',
