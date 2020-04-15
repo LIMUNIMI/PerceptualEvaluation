@@ -1,4 +1,6 @@
 import numpy as np
+import fastdtw
+from .alignment import cdist
 import essentia.standard as esst
 from .utils import farthest_points, find_start_stop, midipath2mat, mat2midipath
 from sklearn.decomposition import PCA
@@ -9,6 +11,7 @@ from . import proposed, magenta_transcription
 from .make_template import TEMPLATE_PATH, SR
 import os
 import pickle
+from . import utils
 
 #: duration of each pianoroll column in seconds
 RES = 0.005
@@ -81,6 +84,40 @@ def main():
     print(f"Total number of samples: {samples.shape[0]}")
 
 
+def _my_prep_inputs(x, y, dist):
+    """
+    Fastdtw sucks too and convicts you to use float64...
+    """
+    return x, y
+
+
+def remap_original_in_other(original, other, timings):
+    """
+    perform fasdtw between original and other and returns timings mapped
+    """
+    EPS = 1e-15
+    pr_original = utils.make_pianoroll(
+        original, res=RES, velocities=False, only_onsets=True) + EPS
+    pr_original += utils.make_pianoroll(original, res=RES,
+                                        velocities=False) + EPS
+    pr_other = utils.make_pianoroll(
+        other, res=RES, velocities=False, only_onsets=True) + EPS
+    pr_other += utils.make_pianoroll(other, res=RES, velocities=False) + EPS
+
+    # hack to let fastdtw accept float32
+    fastdtw._fastdtw.__prep_inputs = _my_prep_inputs
+    _D, path = fastdtw.fastdtw(pr_original.astype(np.float32).T,
+                               pr_other.astype(np.float32).T,
+                               dist=cdist.cosine,
+                               radius=1)
+
+    # converting indices to seconds
+    path = np.array(path) * RES
+
+    # interpolating
+    return np.interp(timings, path[:, 0], path[:, 1])
+
+
 def create_excerpt(audio_path, time, name):
     """
     Given audio path and times, transcribes it and creates new midis and wav
@@ -119,8 +156,9 @@ def create_excerpt(audio_path, time, name):
     full_audio = esst.EasyLoader(filename=audio_path, sampleRate=OUT_SR)()
     original_audio = full_audio[round(time[0][0] * OUT_SR):round(time[0][1] *
                                                                  OUT_SR)]
-    original = segment_mat(original, time[0][0], time[0][1], start_audio)
-    other = segment_mat(other, time[0][0], time[0][1], start_audio)
+    other_time = remap_original_in_other(original, other, time[1])
+    original = segment_mat(original, time[1][0], time[1][1], 0)
+    other = segment_mat(other, other_time[0], other_time[1], 0)
     transcription_0 = segment_mat(transcription_0, time[0][0], time[0][1],
                                   start_audio)
     transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1],
@@ -139,9 +177,10 @@ def create_excerpt(audio_path, time, name):
         os.mkdir('excerpts')
     audio_path = os.path.join('excerpts', name)
 
-    # apply fade in and fade out
+    # apply fade in and fade out (maybe this is better to be performed at
+    # questionnaire creation stage
     fade_len = int(FADE * OUT_SR)
-    fade_array = np.arange(0, 1, 1/fade_len)
+    fade_array = np.arange(0, 1, 1 / fade_len)
     original_audio[:fade_len] *= fade_array
     original_audio[-fade_len:] *= fade_array[::-1]
 
@@ -152,19 +191,26 @@ def create_excerpt(audio_path, time, name):
                     bitrate=256)(original_audio)
 
 
-def segment_mat(mat, start, end, start_audio=None):
+def segment_mat(mat, start, end, start_audio=0):
     """
     returns a new mat (list of lists) with only notes included between start
     and end (included)
 
-    if `start_audio` is not None, use it to first force the mat times to start
-    at `start_audio`
+    if `start_audio` is the reference for audio time shift
+    (use it to provide `start` and `end` referred to audio)
     """
-    if start_audio:
-        mat[:, (1, 2)] = mat[:, (1, 2)] - mat[0, 1] + start_audio
-    return [
-        note.tolist() for note in mat if note[1] >= start and note[2] <= end
-    ]
+
+    # realign mat with audio
+    mat[:, (1, 2)] = mat[:, (1, 2)] - np.min(mat[:, (1, 2)]) + start_audio
+
+    # filter notes included in [start, end]
+    mat = np.array(
+        [note.tolist() for note in mat if note[1] >= start and note[2] <= end])
+
+    # let's the notes start at 0
+    mat[:, (1, 2)] -= np.min(mat[0, (1, 2)])
+
+    return mat
 
 
 def process_song(i, dataset):
@@ -214,6 +260,7 @@ def get_song_win_features(score, audio):
         audio_win = audio[i * hop_audio:i * hop_audio + audio_win_len]
         score_win = score[:, i * hop_score:i * hop_score + score_win_len]
         features.append(score_features(score_win) + audio_features(audio_win))
+        # TODO: something is wrong in timings!!
         times.append(
             ((start / SR + dur_hop * i, start / SR + dur_hop * i + dur_win),
              (score_start * RES + i * hop_score * RES,

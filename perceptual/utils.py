@@ -178,8 +178,11 @@ def mat2midipath(mat, path):
     midi = pm.PrettyMIDI()
     midi.instruments = [pm.Instrument(0)]
     for row in mat:
+        velocity = int(row[3])
+        if velocity < 0:
+            velocity = 80
         midi.instruments[0].notes.append(
-            pm.Note(100, int(row[0]), float(row[1]), float(row[2])))
+            pm.Note(velocity, int(row[0]), float(row[1]), float(row[2])))
 
     # writing to file
     midi.write(path)
