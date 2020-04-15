@@ -9,9 +9,16 @@ START_NOTE = 21
 EPS = np.finfo(np.float64).eps
 
 
+def _my_prep_inputs(x, y, dist):
+    """
+    Fastdtw sucks too and convicts you to use float64...
+    """
+    return x, y
+
+
 def transcription(audio, sr, res=0.02, cuda=False):
 
-    prediction_list = magenta_transcription(audio, sr, res, cuda)
+    prediction_list = magenta_transcription.transcribe(audio, sr, res, cuda)
 
     frame_predictions = prediction_list[0]['frame_predictions'][0].astype(
         np.float)
@@ -40,8 +47,7 @@ def audio_to_score_alignment(misaligned, audio, sr, res=0.02):
 
     # computing features
     audio_features = transcription(audio, sr, res) + EPS
-    pianoroll = utils.make_pianoroll(misaligned, res=res,
-                                      velocities=False) + EPS
+    pianoroll = utils.make_pianoroll(misaligned, res=res, velocities=False) + EPS
     pianoroll += utils.make_pianoroll(
         misaligned, res=res, velocities=False, only_onsets=True)
 

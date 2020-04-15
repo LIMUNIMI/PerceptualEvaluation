@@ -4,7 +4,6 @@ from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
 import essentia.standard as es
 
-
 PLOT = False
 
 
@@ -115,7 +114,8 @@ def midi_pitch_to_f0(midi_pitch):
 
 def find_start_stop(audio, sample_rate=44100, seconds=False):
     """
-    Returns a tuple containing the start and the end of sound in an audio array.
+    Returns a tuple containing the start and the end of sound in an audio
+    array.
 
     ARGUMENTS:
     `audio` : essentia.array
@@ -175,11 +175,11 @@ def mat2midipath(mat, path):
     pitch, start (sec), end (sec), velocity
     """
     # creating pretty_midi.PrettyMIDI object and inserting notes
-    midi = pretty_midi.PrettyMIDI()
-    midi.instruments = [pretty_midi.Instrument(0)]
+    midi = pm.PrettyMIDI()
+    midi.instruments = [pm.Instrument(0)]
     for row in mat:
         midi.instruments[0].notes.append(
-            pretty_midi.Note(100, int(row[0]), float(row[1]), float(row[2])))
+            pm.Note(100, int(row[0]), float(row[1]), float(row[2])))
 
     # writing to file
     midi.write(path)
@@ -215,7 +215,8 @@ def make_pianoroll(mat,
     turn this off use `velocities=False`
 
     if `only_onsets` is true, onle the attack is used and the other part of the
-    notes are discarded (useful for aligning with amt). Similarly `only_offsets`
+    notes are discarded (useful for aligning with amt). Similarly
+    `only_offsets`
 
     `basis` is the number of basis for the nmf; `attack` is the attack
     duration, all other basis will be long `basis_l` column except the last one
@@ -238,7 +239,7 @@ def make_pianoroll(mat,
             vel = 1
 
         if only_offsets:
-            pr[pitch, basis-1, end-1] = vel
+            pr[pitch, basis - 1, end - 1] = vel
             continue
 
         # the attack basis
@@ -343,8 +344,8 @@ def evaluate2d(estimate, ground_truth):
 
         # taking indices of notes with this pitch in remove_from that are not
         # in not_remove_from
-        remove_from_idx = np.where(remove_from[:, 0] == pitch)[
-            0][pitch_not_remove_from:]
+        remove_from_idx = np.where(
+            remove_from[:, 0] == pitch)[0][pitch_not_remove_from:]
 
         # remove from remove_from
         remove_from = np.delete(remove_from, remove_from_idx, 0)

@@ -1,29 +1,34 @@
 import numpy as np
-import essentia.standard as es
+import essentia.standard as esst
 from .utils import farthest_points, find_start_stop, midipath2mat, mat2midipath
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial.distance import pdist, squareform
 from asmd.audioscoredataset import Dataset
 from . import proposed, magenta_transcription
-from .make_template import TEMPLATE_PATH, HOP_SIZE, SR
+from .make_template import TEMPLATE_PATH, SR
 import os
 import pickle
 
 #: duration of each pianoroll column in seconds
 RES = 0.005
-#: sample rate for processing
-SR = 22050
 #: duration of excerpts in seconds
 DURATION = 20
 #: percentage of hop-size for excerpt search
 HOP = 0.5
 #: number of parallele processes
 NJOBS = -1
-#: the number of excerpts per each question (without the central one)
+#: the number of excerpts per each question (without the medoid)
 NUM_EXCERPTS = 4
 #: the number of questions
 QUESTIONS = 1
+#: sample rate for the output excerpts
+OUT_SR = 44100
+#: fade in and fade out duration in seconds
+FADE = 0.5
+#: file format for the excerpts: essentia still has some problem in writing
+#: mp3 in the python version
+FORMAT = 'flac'
 
 audio_win_len = int(DURATION * SR)
 score_win_len = int(DURATION / RES)
@@ -35,7 +40,7 @@ def main():
     dataset = Dataset()
     dataset.filter(instruments=['piano'], datasets=['vienna_corpus'])
 
-    print("\nAnalysing:")
+    print("\nAnalysis:")
 
     parallel_out = dataset.parallel(process_song, n_jobs=NJOBS)
     songs = []
@@ -62,7 +67,7 @@ def main():
 {time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
 {time[1][0]:.2f} - {time[1][1]:.2f}")
             path = os.path.join(dataset.install_dir, path[0])
-            create_excerpt(path, time, f'q{question}_n{j}')
+            create_excerpt(path, time, f'q{question}_n{j}_')
 
     distmat = squareform(pdist(samples))
     medoid = np.argmin(np.sum(distmat, axis=1))
@@ -71,8 +76,8 @@ def main():
     print(f"The medoid of the whole set is: {path}, seconds audio \
 {time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
 {time[1][0]:.2f} - {time[1][1]:.2f}")
-    path = os.join(dataset.install_dir, path[0])
-    create_excerpt(path, time, medoid)
+    path = os.path.join(dataset.install_dir, path[0])
+    create_excerpt(path, time, f'q{question}_medoid_')
     print(f"Total number of samples: {samples.shape[0]}")
 
 
@@ -83,9 +88,9 @@ def create_excerpt(audio_path, time, name):
     transcription number.
     """
 
-    full_audio = es.EasyLoader(filename=audio_path, sampleRate=SR)()
+    full_audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
     start_audio, _ = find_start_stop(full_audio, sample_rate=SR, seconds=True)
-    original = midipath2mat(audio_path[:-4]+'.mid')
+    original = midipath2mat(audio_path[:-4] + '.mid')
 
     # compute score path
     score_path = './my_scores/' + os.path.basename(audio_path)[:-8] + '.mid'
@@ -94,9 +99,12 @@ def create_excerpt(audio_path, time, name):
     # transcribe
     data = pickle.load(open(TEMPLATE_PATH, 'rb'))
     transcription_0, _, _, _ = proposed.transcribe(
-        full_audio, score, data, velocity_model=proposed.get_default_predict_func())
+        full_audio,
+        score,
+        data,
+        velocity_model=proposed.get_default_predict_func())
 
-    magenta_transcription(audio_path, 'temp.mid')
+    magenta_transcription.transcribe_from_paths(audio_path, 'temp.mid')
     transcription_1 = midipath2mat('temp.mid')
     os.remove('temp.mid')
 
@@ -105,29 +113,43 @@ def create_excerpt(audio_path, time, name):
     performance = '01'
     if audio_path[-6:-4] == '01':
         performance = '02'
-    other = midipath2mat(audio_path[:-6]+performance+'.mid')
+    other = midipath2mat(audio_path[:-6] + performance + '.mid')
 
     # segment all the scores and audios
-    full_audio = es.EasyLoader(filename=audio_path, sampleRate=44100)()
-    original_audio = full_audio[round(time[0][0] * SR) : round(time[0][1] * SR)]
+    full_audio = esst.EasyLoader(filename=audio_path, sampleRate=OUT_SR)()
+    original_audio = full_audio[round(time[0][0] * OUT_SR):round(time[0][1] *
+                                                                 OUT_SR)]
     original = segment_mat(original, time[0][0], time[0][1], start_audio)
     other = segment_mat(other, time[0][0], time[0][1], start_audio)
-    transcription_0 = segment_mat(transcription_0, time[0][0], time[0][1], start_audio)
-    transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1], start_audio)
+    transcription_0 = segment_mat(transcription_0, time[0][0], time[0][1],
+                                  start_audio)
+    transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1],
+                                  start_audio)
 
     # write scores to `to_be_synthesized` and audios to `excerpts`
     if not os.path.exists('to_be_synthesized'):
         os.mkdir('to_be_synthesized')
     midi_path = os.path.join('to_be_synthesized', name)
-    mat2midipath(original, midi_path+'orig.mid')
-    mat2midipath(other, midi_path+'other.mid')
-    mat2midipath(transcription_0, midi_path+'proposed.mid')
-    mat2midipath(transcription_1, midi_path+'magenta.mid')
+    mat2midipath(original, midi_path + 'orig.mid')
+    mat2midipath(other, midi_path + 'other.mid')
+    mat2midipath(transcription_0, midi_path + 'proposed.mid')
+    mat2midipath(transcription_1, midi_path + 'magenta.mid')
 
     if not os.path.exists('excerpts'):
         os.mkdir('excerpts')
     audio_path = os.path.join('excerpts', name)
-    esst.MonoWriter(filename=audio_path+'orig.wav', sampleRate=44100, format='.mp3', bitrate=256)
+
+    # apply fade in and fade out
+    fade_len = int(FADE * OUT_SR)
+    fade_array = np.arange(0, 1, 1/fade_len)
+    original_audio[:fade_len] *= fade_array
+    original_audio[-fade_len:] *= fade_array[::-1]
+
+    # write audio
+    esst.MonoWriter(filename=audio_path + 'orig.' + FORMAT,
+                    sampleRate=OUT_SR,
+                    format=FORMAT,
+                    bitrate=256)(original_audio)
 
 
 def segment_mat(mat, start, end, start_audio=None):
@@ -140,7 +162,10 @@ def segment_mat(mat, start, end, start_audio=None):
     """
     if start_audio:
         mat[:, (1, 2)] = mat[:, (1, 2)] - mat[0, 1] + start_audio
-    return [note.tolist() for note in mat if note[1] >= start and note[2] <= end]
+    return [
+        note.tolist() for note in mat if note[1] >= start and note[2] <= end
+    ]
+
 
 def process_song(i, dataset):
     """
@@ -151,7 +176,7 @@ def process_song(i, dataset):
         i, score_type=['precise_alignment', 'broad_alignment'], resolution=RES)
     audio, sr = dataset.get_audio(i)
 
-    audio = es.Resample(inputSampleRate=sr, outputSampleRate=SR)(audio)
+    audio = esst.Resample(inputSampleRate=sr, outputSampleRate=SR)(audio)
     return get_song_win_features(score, audio)
 
 
@@ -201,11 +226,11 @@ def audio_features(audio_win):
     """
     returns audio features for a win
     """
-    spectrum = es.Spectrum(size=audio_win.shape[0])(audio_win)
-    _bands, mfcc = es.MFCC(inputSize=spectrum.shape[0],
-                           sampleRate=SR)(spectrum)
+    spectrum = esst.Spectrum(size=audio_win.shape[0])(audio_win)
+    _bands, mfcc = esst.MFCC(inputSize=spectrum.shape[0],
+                             sampleRate=SR)(spectrum)
 
-    rhythm = es.RhythmDescriptors()(audio_win)
+    rhythm = esst.RhythmDescriptors()(audio_win)
     return mfcc.tolist() + [rhythm[2]] + list(rhythm[5:11])
 
 
