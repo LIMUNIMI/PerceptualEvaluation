@@ -11,7 +11,6 @@ from torch import nn
 from asmd import audioscoredataset
 import numpy as np
 import sys
-import pretty_midi
 import random
 from tqdm import tqdm
 
@@ -21,7 +20,7 @@ DEVICE = 'cuda'
 VELOCITY_MODEL_PATH = 'velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 8
-EPS_ACTIVATIONS = 1e-6
+EPS_ACTIVATIONS = 1e-8
 NUM_SONGS_FOR_TRAINING = 200
 EPOCHS = 500
 BATCH_SIZE = 100
@@ -47,7 +46,7 @@ def transcribe(audio,
                score,
                data,
                velocity_model=None,
-               res=0.02,
+               res=0.001,
                sr=SR,
                align=True,
                return_mini_specs=False):
@@ -231,7 +230,6 @@ def create_mini_specs(data):
 
 
 class VelocityEstimation(nn.Module):
-
     def __init__(self, in_numel=2000, branches=BRANCHES, k=2):
         super().__init__()
 
@@ -245,22 +243,28 @@ class VelocityEstimation(nn.Module):
         self.process = nn.ModuleList()
 
         for i in range(branches):
-            self.process.append(nn.Sequential(
-                nn.Linear(in_numel, k, bias=True), nn.SELU()
-            ))
+            self.process.append(
+                nn.Sequential(nn.Linear(in_numel, k, bias=True), nn.SELU()))
 
         self.finalize = nn.Sequential(
             # TODO
             # nn.BatchNorm1d(branches * k),
             # TODO 3
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False),
+            nn.SELU(),
             # TODO Sigmoid -> SELU
-            nn.Linear(branches * k, 1, bias=False), nn.Sigmoid())
+            nn.Linear(branches * k, 1, bias=False),
+            nn.Sigmoid())
 
         # self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 
@@ -270,8 +274,8 @@ class VelocityEstimation(nn.Module):
         x = self.preprocess(x).reshape(x.shape[0], -1)
 
         # process each velocity range
-        y = torch.zeros(
-            x.shape[0], self.branches, self.k).to(x.dtype).to(x.device)
+        y = torch.zeros(x.shape[0], self.branches,
+                        self.k).to(x.dtype).to(x.device)
         for i in range(self.branches):
             y[:, i, :] = self.process[i](x)
 
@@ -434,10 +438,11 @@ def train(data):
 
 def get_default_predict_func():
     velocity_model = VelocityEstimation().to(DEVICE)
-    velocity_model.load_state_dict(
-        pickle.load(open(VELOCITY_MODEL_PATH, 'rb')))
+    velocity_model.load_state_dict(pickle.load(open(VELOCITY_MODEL_PATH,
+                                                    'rb')))
     velocity_model.eval()
     return velocity_model.predict
+
 
 def show_usage():
     print(
@@ -462,9 +467,8 @@ if __name__ == '__main__':
         if '--cpu' in sys.argv:
             DEVICE = 'cpu'
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        
         transcribe_from_paths(sys.argv[1],
                               sys.argv[2],
                               data,
-                              predict_func,
+                              get_default_predict_func(),
                               tofile=sys.argv[3])

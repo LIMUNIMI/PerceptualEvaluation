@@ -20,7 +20,7 @@ else:
     sys.exit(3)
 
 SR = 22050
-RES = 0.02
+RES = 0.001
 NJOBS = 10
 EPS = 1e-15
 
