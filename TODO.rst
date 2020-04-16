@@ -1,6 +1,11 @@
 TODO
 ====
 
-#. train nn for spectrograms
-#. provide scripts for simple transcription with magenta and vienna
-#. objective evaluation
+#. train nn on aligned data
+#. train nn on vienna data
+#. debug
+#. extract excerpts
+#. chose vst (do we still need the scales?)
+#. set up tests with a script
+#. objective evaluation over SMD and over extracted excerpts
+#. script for comparing objective and subjective evaluation

@@ -17,7 +17,7 @@ Environment
 #. ``cd <repo>``
 #. ``pyenv local 3.6.9``
 #. ``poetry install``
-#. ``pip install madmom -c constraints.txt`` (this is needed because google sucks and has an exact
+#. ``pip install git+https://github.com/CPJKU/madmom -c constraints.txt`` (this is needed because google sucks and has an exact
    dependency for an old mido version in its requirements.txt)
 
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from ``asmd``
@@ -93,12 +93,12 @@ _____________
            and ``audio`` folder. You can download them from our mega_
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_. It contains
-           915 039 mini spectrograms and uncompressed is large 14 GB.
+           885 755 mini spectrograms and uncompressed is large 14 GB.
     #. uncompress the dataset: ``unxz mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it; 
-            #. Training set size: 640 600
-            #. Validation and test set size: 137 300
+            #. Training set size: 602 100
+            #. Validation and test set size: 132 900
             #. Final test absolute error (avg, std): 14.73, 10.91 (130 epochs)
 
 #. To run the objective evaluation use

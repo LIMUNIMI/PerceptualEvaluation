@@ -1,6 +1,5 @@
 import tensorflow as tf
 from magenta.music import audio_io
-from magenta.music import midi_io
 from magenta.models.onsets_frames_transcription import audio_label_data_utils
 from magenta.models.onsets_frames_transcription import configs
 from magenta.models.onsets_frames_transcription import data
@@ -11,6 +10,7 @@ import os
 import logging
 import essentia.standard as esst
 import numpy as np
+from .utils import mat2midipath
 
 # suppress tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # FATAL
@@ -32,10 +32,12 @@ def google_sucks(samples, sr):
     return samples
 
 
-def transcribe(audio, sr, res=0.02, cuda=False):
+def transcribe(audio, sr, cuda=False):
     """
     Google sucks and want to use audio path (raw wav) instead of decoded
     samples loosing in decoupling between file format and DSP
+
+    input audio and sample rate, output mat like asmd with (pitch, ons, offs, velocity)
     """
 
     # simple hack because google sucks... in this way we can accept audio data
@@ -98,12 +100,28 @@ def transcribe(audio, sr, res=0.02, cuda=False):
 
     assert len(prediction_list) == 1
 
-    return prediction_list
+    notes = music_pb2.NoteSequence.FromString(
+        prediction_list[0]['sequence_predictions'][0]).notes
+
+    out = np.empty((len(notes), 4))
+    for i, note in enumerate(notes):
+        out[i] = [note.pitch, note.start_time, note.end_time, note.velocity]
+    return out
 
 
-def transcribe_from_paths(audio_path, topath, sr=22050, cuda=False):
+def transcribe_from_paths(audio_path, topath, sr=44100, cuda=False):
     audio = esst.EasyLoader(filename=audio_path, sampleRate=sr)()
-    prediction_list = transcribe(audio, sr)
-    sequence_prediction = music_pb2.NoteSequence.FromString(
-            prediction_list[0]['sequence_predictions'][0])
-    midi_io.sequence_proto_to_midi_file(sequence_prediction, topath)
+    mat = transcribe(audio, sr, cuda=cuda)
+    mat2midipath(mat, topath)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} [input audio file] [output midi file]")
+
+    cuda = False
+    if "--cuda" in sys.argv:
+        cuda = True
+
+    transcribe_from_paths(sys.argv[1], sys.argv[2], sr=44100, cuda=cuda)

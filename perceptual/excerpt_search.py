@@ -137,15 +137,18 @@ def create_excerpt(audio_path, time, name):
     data = pickle.load(open(TEMPLATE_PATH, 'rb'))
     transcription_0, _, _, _ = proposed.transcribe(
         full_audio,
-        score,
         data,
-        velocity_model=proposed.get_default_predict_func())
+        score=score)
 
     magenta_transcription.transcribe_from_paths(audio_path, 'temp.mid')
     transcription_1 = midipath2mat('temp.mid')
     os.remove('temp.mid')
 
-    # TODO: vienna model transcription
+    transcription_2, _, _, _ = proposed.transcribe(
+        full_audio,
+        data,
+        score=None)
+
     # chose another interpretation
     performance = '01'
     if audio_path[-6:-4] == '01':
@@ -163,6 +166,8 @@ def create_excerpt(audio_path, time, name):
                                   start_audio)
     transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1],
                                   start_audio)
+    transcription_2 = segment_mat(transcription_2, time[0][0], time[0][1],
+                                  start_audio)
 
     # write scores to `to_be_synthesized` and audios to `excerpts`
     if not os.path.exists('to_be_synthesized'):
@@ -172,6 +177,7 @@ def create_excerpt(audio_path, time, name):
     mat2midipath(other, midi_path + 'other.mid')
     mat2midipath(transcription_0, midi_path + 'proposed.mid')
     mat2midipath(transcription_1, midi_path + 'magenta.mid')
+    mat2midipath(transcription_2, midi_path + 'vienna.mid')
 
     if not os.path.exists('excerpts'):
         os.mkdir('excerpts')

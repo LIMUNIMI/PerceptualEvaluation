@@ -17,7 +17,8 @@ from tqdm import tqdm
 MINI_SPEC_PATH = 'mini_specs.pkl'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
-VELOCITY_MODEL_PATH = 'velocity_model.pkl'
+ALIGNED_VELOCITY_MODEL_PATH = 'vienna_velocity_model.pkl'
+VIENNA_VELOCITY_MODEL_PATH = 'aligned_velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 8
 EPS_ACTIVATIONS = 1e-8
@@ -26,7 +27,7 @@ EPOCHS = 500
 BATCH_SIZE = 100
 EARLY_STOP = 10
 # TODO channels
-BRANCHES = 16
+BRANCHES = 8
 DATASET_LEN = 1  # use this for debugging
 
 
@@ -42,10 +43,25 @@ def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
     return es.array(spectrogram).T
 
 
+def get_default_predict_func(vienna_based):
+    """
+    Return the default  predict function based on PyTorch.  If `vienna_based`
+    is True, it will be the model trained with vienna transcription method,
+    otherwise it will be the model based on magenta aligned score
+    """
+    velocity_model = VelocityEstimation().to(DEVICE)
+    if vienna_based:
+        parameters = pickle.load(open(VIENNA_VELOCITY_MODEL_PATH, 'rb'))
+    else:
+        parameters = pickle.load(open(ALIGNED_VELOCITY_MODEL_PATH, 'rb'))
+    velocity_model.load_state_dict(parameters)
+    velocity_model.eval()
+    return velocity_model.predict
+
+
 def transcribe(audio,
-               score,
                data,
-               velocity_model=None,
+               score=None,
                res=0.001,
                sr=SR,
                align=True,
@@ -57,23 +73,22 @@ def transcribe(audio,
 
     `res` is only used for alignment
 
-    `velocity_model` is a callable wich takes a minispectrogram and returns the
-    velocity (e.g. a PyTorch nn.Module)
-
-    `align` False can be used for testing other alignment procedures; in that
-    case `audio_path` and `res` can be ignored
-
+    `align` False can be used to use vienna transcription output as score
     """
-    from .alignment.align_with_amt import audio_to_score_alignment
+    velocity_model = get_default_predict_func(score is None)
 
     initW, minpitch, maxpitch = data
     initW = copy(initW)
-    score = copy(score)
     if align:
+        from .alignment.align_with_amt import audio_to_score_alignment
+        score = copy(score)
         # align score
         new_ons, new_offs = audio_to_score_alignment(score, audio, sr, res=res)
         score[:, 1] = new_ons
         score[:, 2] = new_offs
+    else:
+        from .vienna_transcription import transcribe
+        score = transcribe(audio, sr)
 
     # prepare initial matrices
 
@@ -171,9 +186,9 @@ def transcribe(audio,
 
 
 def transcribe_from_paths(audio_path,
-                          midi_score_path,
                           data,
                           velocity_model,
+                          midi_score_path=None,
                           tofile='out.mid'):
     """
     Load a midi and an audio file and call `transcribe`. If `tofile` is not
@@ -182,8 +197,14 @@ def transcribe_from_paths(audio_path,
     """
     import essentia.standard as esst
     audio = esst.EasyLoader(filename=audio_path, sampleRate=SR)()
-    score = midipath2mat(midi_score_path)
-    new_score, _, _, _ = transcribe(audio, score, data, velocity_model)
+    if midi_score_path:
+        score = midipath2mat(midi_score_path)
+    else:
+        score = None
+    new_score, _, _, _ = transcribe(audio,
+                                    data,
+                                    score=score,
+                                    velocity_model=velocity_model)
 
     # writing to midi
     mat2midipath(new_score, tofile)
@@ -194,7 +215,7 @@ def processing(i, dataset, data):
     audio, sr = dataset.get_mix(i, sr=SR)
     score = dataset.get_score(i, score_type=['non_aligned'])
     velocities = dataset.get_score(i, score_type=['precise_alignment'])[:, 3]
-    return transcribe(audio, score, data,
+    return transcribe(audio, data, score=score,
                       return_mini_specs=True), velocities.tolist()
 
 
@@ -234,7 +255,7 @@ class VelocityEstimation(nn.Module):
         super().__init__()
 
         # TODO Dropout
-        self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.4))
+        self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.2))
 
         self.in_numel = in_numel
         self.branches = branches
@@ -260,11 +281,9 @@ class VelocityEstimation(nn.Module):
             nn.SELU(),
             nn.Linear(branches * k, branches * k, bias=False),
             nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
             # TODO Sigmoid -> SELU
             nn.Linear(branches * k, 1, bias=False),
-            nn.Sigmoid())
+            nn.SELU())
 
         # self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 
@@ -362,8 +381,7 @@ def train(data):
     testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y, BRANCHES),
                                              batch_size=BATCH_SIZE)
 
-    # TODO lr
-    optim = torch.optim.Adadelta(model.parameters(), lr=1e-2)
+    optim = torch.optim.Adadelta(model.parameters(), lr=1e-3)
 
     best_epoch = 0
     best_params = None
@@ -436,17 +454,9 @@ def train(data):
         )
 
 
-def get_default_predict_func():
-    velocity_model = VelocityEstimation().to(DEVICE)
-    velocity_model.load_state_dict(pickle.load(open(VELOCITY_MODEL_PATH,
-                                                    'rb')))
-    velocity_model.eval()
-    return velocity_model.predict
-
-
 def show_usage():
     print(
-        f"Usage: {sys.argv[0]} [audio_path] [midi_score_path] [midi_output_path] [--cpu]"
+        f"Usage: {sys.argv[0]} [audio_path midi_output_path [midi_score_path] [--cpu]]"
     )
     print(f"Usage: {sys.argv[0]} create_mini_specs")
     print(f"Usage: {sys.argv[0]} train")
@@ -461,14 +471,19 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'train':
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
         train(data)
-    elif len(sys.argv) < 4:
+    elif len(sys.argv) < 3:
         show_usage()
     else:
-        if '--cpu' in sys.argv:
-            DEVICE = 'cpu'
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
+
+        if len(sys.argv) > 3:
+            if '--cpu' in sys.argv:
+                DEVICE = 'cpu'
+            else:
+                score = sys.argv[3]
+        else:
+            score = None
         transcribe_from_paths(sys.argv[1],
-                              sys.argv[2],
                               data,
-                              get_default_predict_func(),
-                              tofile=sys.argv[3])
+                              midi_score_path=score,
+                              tofile=sys.argv[2])

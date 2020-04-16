@@ -25,19 +25,16 @@ def _my_prep_inputs(x, y, dist):
 
 def transcription(audio, sr, res=0.001, cuda=False):
 
-    prediction_list = transcribe(audio, sr, res, cuda)
+    predicted_mat = transcribe(audio, sr, cuda)
 
-    frame_predictions = prediction_list[0]['frame_predictions'][0].astype(
-        np.float)
-    frame_predictions += prediction_list[0]['onset_predictions'][0].astype(
-        np.float)
+    pianoroll = utils.make_pianoroll(predicted_mat, res=res,
+                                     velocities=False) + EPS
+    pianoroll += utils.make_pianoroll(predicted_mat,
+                                      res=res,
+                                      velocities=False,
+                                      only_onsets=True)
 
-    # convert to pianoroll with resolution `res`
-    n_cols = round(len(audio) / sr / res)
-    frame_predictions = utils.stretch_pianoroll(frame_predictions.T, n_cols)
-    pr = np.zeros((128, n_cols))
-    pr[START_NOTE:START_NOTE + 88] = frame_predictions
-    return pr
+    return pianoroll
 
 
 def dtw_align(pianoroll, audio_features, misaligned, res, radius):
