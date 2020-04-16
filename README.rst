@@ -31,7 +31,7 @@ Chose excerpts
 #. ``poetry run python -m perceptual.excerpt_search``
 
 This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
-original performances and will create a new directory ``excerpts`` with all
+original performances and will create a new directory ``audio`` with all
 extracted excerpts and midi aligned.
 
 .. You still need to create the corresponding scores for testing the
@@ -50,18 +50,31 @@ extracted excerpts and midi aligned.
 Chose vsts
 ----------
 
-#. Build scales: ``poetry run python -m perceptual.midi_test_creation``
-#. Synthesize scales and chosen excerpts with vsts. You can download our
-   synthesized midis from [url]; extract them in the ``excerpts`` directory.
-#. Analyze scales and chosen excerpts:
+.. #. Build scales: ``poetry run python -m perceptual.midi_test_creation``
+#. Synthesize the chosen excerpts with vsts. You can download our
+   synthesized midis from [url]; extract them in the ``audio`` directory.
+   You should have a directory for each vst in ``audio`` and for each vst you
+   should have 5 different audio. In the root of ``audio`` you should also have
+   the original recordings.
+#. Analyze chosen excerpts:
    ``poetry run python -m perceptual.vst_search``
 
-This will copy the excerpts relative to the chosen vsts to the folder ``chosen``.
+This will copy the excerpts relative to the chosen vsts to the folder ``excerpts``.
+
 
 Build tests
 -----------
 
-[no idea of how to do this...]
+Set up your server (Python or PHP) and download WAET_. 
+
+#. place the directory ``excerpts`` in the root of WAET 
+#. place the file ``listening_test.xml`` in ``[WAET root]/tests/pool.xml``
+#. place the directory ``training`` from our `mega_` in the root of WAET
+
+You should be able to access your test at ``/test.html?url=/php/pool.php``. More info in the WAET wiki_
+
+.. _WAET: https://github.com/BrechtDeMan/WebAudioEvaluationTool
+.. _wiki: https://github.com/BrechtDeMan/WebAudioEvaluationTool/wiki/Pooling-tests
 
 Objective evaluation
 --------------------
@@ -94,23 +107,25 @@ _____________
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
            the dataset of mini_specs or download it from out mega_. It contains
            885 755 mini spectrograms and uncompressed is large 14 GB.
-    #. uncompress the dataset: ``unxz mini_specs.pkl.xz``
+    #. uncompress the dataset: ``unxz aligned_mini_specs.pkl.xz``
     #. ``poetry run python -m perceptual.proposed train`` to train our model
            for velocity estimation and test it; 
             #. Training set size: 602 100
             #. Validation and test set size: 132 900
             #. Final test absolute error (avg, std): 14.73, 10.91 (130 epochs)
+    #. redo everything with vienna model (use ``--vienna`` for
+           ``create_mini_specs`` and ``train``)
 
-#. To run the objective evaluation use
+#. To run the objective evaluation use [TODO]
 
     ``poetry run python -m perceptual.objective_eval``
 
 #. To compare with subjective evaluation, put your perceptual test results in
    ``results`` directory with name ``perceptual.csv`` and run ``poetry run
    python -m perceptual.compare_eval``. This will create csv files in
-   ``results`` directory.
+   ``results`` directory. [TODO]
 
-#. To plot them use ``poetry run python -m perceptual.plots``.
+#. To plot them use ``poetry run python -m perceptual.plots``. [TODO]
 
 
 Perceptual tests

@@ -179,19 +179,19 @@ def create_excerpt(audio_path, time, name):
     mat2midipath(transcription_1, midi_path + 'magenta.mid')
     mat2midipath(transcription_2, midi_path + 'vienna.mid')
 
-    if not os.path.exists('excerpts'):
-        os.mkdir('excerpts')
-    audio_path = os.path.join('excerpts', name)
+    if not os.path.exists('audio'):
+        os.mkdir('audio')
+    audio_path = os.path.join('audio', name)
 
     # apply fade in and fade out (maybe this is better to be performed at
     # questionnaire creation stage
-    fade_len = int(FADE * OUT_SR)
-    fade_array = np.arange(0, 1, 1 / fade_len)
-    original_audio[:fade_len] *= fade_array
-    original_audio[-fade_len:] *= fade_array[::-1]
+    # fade_len = int(FADE * OUT_SR)
+    # fade_array = np.arange(0, 1, 1 / fade_len)
+    # original_audio[:fade_len] *= fade_array
+    # original_audio[-fade_len:] *= fade_array[::-1]
 
     # write audio
-    esst.MonoWriter(filename=audio_path + 'orig.' + FORMAT,
+    esst.MonoWriter(filename=audio_path + 'target.' + FORMAT,
                     sampleRate=OUT_SR,
                     format=FORMAT,
                     bitrate=256)(original_audio)
