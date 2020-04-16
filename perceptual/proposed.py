@@ -14,9 +14,10 @@ import sys
 import random
 from tqdm import tqdm
 
-MINI_SPEC_PATH = 'mini_specs.pkl'
 MINI_SPEC_SIZE = 20
 DEVICE = 'cuda'
+ALIGNED_MINI_SPEC_PATH = 'aligned_mini_specs.pkl'
+VIENNA_MINI_SPEC_PATH = 'vienna_mini_specs.pkl'
 ALIGNED_VELOCITY_MODEL_PATH = 'vienna_velocity_model.pkl'
 VIENNA_VELOCITY_MODEL_PATH = 'aligned_velocity_model.pkl'
 COST_FUNC = 'EucDist'
@@ -26,8 +27,7 @@ NUM_SONGS_FOR_TRAINING = 200
 EPOCHS = 500
 BATCH_SIZE = 100
 EARLY_STOP = 10
-# TODO channels
-BRANCHES = 8
+BRANCHES = 128
 DATASET_LEN = 1  # use this for debugging
 
 
@@ -219,7 +219,7 @@ def processing(i, dataset, data):
                       return_mini_specs=True), velocities.tolist()
 
 
-def create_mini_specs(data):
+def create_mini_specs(data, mini_spec_path):
     """
     Perform alignment and NMF but not velocity estimation; instead, saves all
     the mini_specs of each note in the Maestro dataset for successive training
@@ -244,7 +244,7 @@ def create_mini_specs(data):
                 mini_specs.append(spec)
                 velocities.append(vel)
 
-    pickle.dump((mini_specs, velocities), open(MINI_SPEC_PATH, 'wb'))
+    pickle.dump((mini_specs, velocities), open(mini_spec_path, 'wb'))
     print(
         f"number of (inputs, targets) in training set: {len(mini_specs)}, {len(velocities)}"
     )
@@ -254,8 +254,7 @@ class VelocityEstimation(nn.Module):
     def __init__(self, in_numel=2000, branches=BRANCHES, k=2):
         super().__init__()
 
-        # TODO Dropout
-        self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.2))
+        self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.3))
 
         self.in_numel = in_numel
         self.branches = branches
@@ -268,22 +267,19 @@ class VelocityEstimation(nn.Module):
                 nn.Sequential(nn.Linear(in_numel, k, bias=True), nn.SELU()))
 
         self.finalize = nn.Sequential(
-            # TODO
-            # nn.BatchNorm1d(branches * k),
             # TODO 3
+            # nn.Linear(branches * k, branches * k, bias=False),
+            # nn.SELU(),
+            # nn.Linear(branches * k, branches * k, bias=False),
+            # nn.SELU(),
             nn.Linear(branches * k, branches * k, bias=False),
             nn.SELU(),
             nn.Linear(branches * k, branches * k, bias=False),
             nn.SELU(),
             nn.Linear(branches * k, branches * k, bias=False),
             nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
-            # TODO Sigmoid -> SELU
             nn.Linear(branches * k, 1, bias=False),
-            nn.SELU())
+            nn.Sigmoid())
 
         # self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 
@@ -337,6 +333,7 @@ class Dataset(torch.utils.data.Dataset):
         self.targets_middle[torch.arange(len(targets)), targets % branches] = 1
         assert len(self.inputs) == len(self.targets),\
             "inputs and targets must have the same length!"
+        del inputs, targets
 
     def __getitem__(self, i):
         return self.inputs[i], self.targets[i], self.targets_middle[i]
@@ -345,10 +342,10 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.inputs)
 
 
-def train(data):
+def train(data, model_path, mini_spec_path):
 
     print("Loading dataset...")
-    mini_spec = open(MINI_SPEC_PATH, 'rb')
+    mini_spec = open(mini_spec_path, 'rb')
     inputs, targets = pickle.load(mini_spec)
     mini_spec.close()
 
@@ -380,6 +377,7 @@ def train(data):
                                               batch_size=BATCH_SIZE)
     testloader = torch.utils.data.DataLoader(Dataset(test_x, test_y, BRANCHES),
                                              batch_size=BATCH_SIZE)
+    del train_x, train_y, valid_x, valid_y, test_x, test_y, inputs, targets
 
     optim = torch.optim.Adadelta(model.parameters(), lr=1e-3)
 
@@ -432,7 +430,7 @@ def train(data):
 
     # saving params
     model.load_state_dict(best_params)
-    pickle.dump(model.to('cpu').state_dict(), open(VELOCITY_MODEL_PATH, 'wb'))
+    pickle.dump(model.to('cpu').state_dict(), open(model_path, 'wb'))
     model.to(DEVICE)
 
     # testing
@@ -458,22 +456,35 @@ def show_usage():
     print(
         f"Usage: {sys.argv[0]} [audio_path midi_output_path [midi_score_path] [--cpu]]"
     )
-    print(f"Usage: {sys.argv[0]} create_mini_specs")
-    print(f"Usage: {sys.argv[0]} train")
+    print(f"Usage: {sys.argv[0]} create_mini_specs, [--vienna]")
+    print(f"Usage: {sys.argv[0]} train [--vienna]")
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         show_usage()
     elif sys.argv[1] == 'create_mini_specs':
+
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        create_mini_specs(data)
+        mini_spec_path = ALIGNED_MINI_SPEC_PATH
+        if '--vienna' in sys.argv:
+            mini_spec_path = VIENNA_MINI_SPEC_PATH
+        create_mini_specs(data, mini_spec_path)
+
     elif sys.argv[1] == 'train':
+
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-        train(data)
+        mini_spec_path = ALIGNED_MINI_SPEC_PATH
+        model_path = ALIGNED_VELOCITY_MODEL_PATH
+        if '--vienna' in sys.argv:
+            model_path = VIENNA_VELOCITY_MODEL_PATH
+            mini_spec_path = VIENNA_MINI_SPEC_PATH
+        train(data, model_path, mini_spec_path)
+
     elif len(sys.argv) < 3:
         show_usage()
     else:
+
         data = pickle.load(open(TEMPLATE_PATH, 'rb'))
 
         if len(sys.argv) > 3:
