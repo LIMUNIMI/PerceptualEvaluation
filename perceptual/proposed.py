@@ -27,8 +27,9 @@ NUM_SONGS_FOR_TRAINING = 100
 EPOCHS = 500
 BATCH_SIZE = 75
 EARLY_STOP = 10
-BRANCHES = 16
+BRANCHES = 8
 DATASET_LEN = 1  # use this for debugging
+EPS_RANGE = 0.1
 
 
 def spectrogram(audio, frames=FRAME_SIZE, hop=HOP_SIZE):
@@ -106,7 +107,7 @@ def transcribe(audio,
                         velocities=False,
                         attack=ATTACK,
                         eps=EPS_ACTIVATIONS,
-                        eps_range=0.1)
+                        eps_range=EPS_RANGE)
 
     # remove trailing zeros in initH
     nonzero_cols = pr.any(axis=0).nonzero()[0]
@@ -256,7 +257,10 @@ def create_mini_specs(data, mini_spec_path):
 
 
 class VelocityEstimation(nn.Module):
-    def __init__(self, in_numel=MINI_SPEC_SIZE * 100, branches=BRANCHES, k=2):
+    def __init__(self,
+                 in_numel=MINI_SPEC_SIZE * 100,
+                 branches=BRANCHES,
+                 k=128 // BRANCHES + 1):
         super().__init__()
 
         self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.3))
@@ -269,28 +273,15 @@ class VelocityEstimation(nn.Module):
 
         for i in range(branches):
             self.process.append(
-                nn.Sequential(
-                    nn.Linear(in_numel, in_numel, bias=False),
-                    nn.SELU(),
-                    nn.Linear(in_numel, in_numel, bias=False),
-                    nn.SELU(),
-                    nn.Linear(in_numel, k, bias=False),
-                    nn.SELU())
-            )
+                nn.Sequential(nn.Linear(in_numel, k, bias=True), nn.SELU()))
 
         self.finalize = nn.Sequential(
-            # nn.Linear(branches * k, branches * k, bias=False),
-            # nn.SELU(),
-            # nn.Linear(branches * k, branches * k, bias=False),
-            # nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
-            nn.Linear(branches * k, branches * k, bias=False),
-            nn.SELU(),
-            nn.Linear(branches * k, 1, bias=False),
-            nn.Sigmoid())
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, branches * k, bias=False), nn.SELU(),
+            nn.Linear(branches * k, 1, bias=False), nn.Sigmoid())
 
         # self.apply(lambda x: init_weights(x, nn.init.kaiming_uniform_))
 

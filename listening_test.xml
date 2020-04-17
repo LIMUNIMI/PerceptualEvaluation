@@ -30,14 +30,6 @@
                 <option name="3">between 3 and 6 hours per week</option>
                 <option name="4">more than 6 hours per week</option>
             </surveyradio>
-            <surveyradio id="headphones" mandatory="true">
-                <statement>How much does your headphones or headsets cost? Please, try to use the best that you can!</statement>
-                <option name="0">less than 10 euros</option>
-                <option name="1">between 10 euros and 25 euros</option>
-                <option name="2">between 25 euros and 50 euros</option>
-                <option name="3">between 50 euros and 150 euros</option>
-                <option name="4">more than 150 euros</option>
-            </surveyradio>
         </survey>
         <survey location="post" showBackButton="true">
             <surveyquestion id="comments" boxsize="normal">
