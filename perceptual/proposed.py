@@ -25,9 +25,9 @@ NJOBS = 5
 EPS_ACTIVATIONS = 1e-4
 NUM_SONGS_FOR_TRAINING = 100
 EPOCHS = 500
-BATCH_SIZE = 75
+BATCH_SIZE = 400
 EARLY_STOP = 10
-BRANCHES = 8
+BRANCHES = 16
 DATASET_LEN = 1  # use this for debugging
 EPS_RANGE = 0.1
 
@@ -381,7 +381,7 @@ def train(data, model_path, mini_spec_path):
                                              batch_size=BATCH_SIZE)
     del train_x, train_y, valid_x, valid_y, test_x, test_y, inputs, targets
 
-    optim = torch.optim.Adadelta(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adadelta(model.parameters(), lr=1e-3)
 
     best_epoch = 0
     best_params = None
