@@ -14,20 +14,20 @@ import sys
 import random
 from tqdm import tqdm
 
-MINI_SPEC_SIZE = 20
+MINI_SPEC_SIZE = 14
 DEVICE = 'cuda'
 ALIGNED_MINI_SPEC_PATH = 'aligned_mini_specs.pkl'
 VIENNA_MINI_SPEC_PATH = 'vienna_mini_specs.pkl'
 ALIGNED_VELOCITY_MODEL_PATH = 'vienna_velocity_model.pkl'
 VIENNA_VELOCITY_MODEL_PATH = 'aligned_velocity_model.pkl'
 COST_FUNC = 'EucDist'
-NJOBS = 8
-EPS_ACTIVATIONS = 1e-8
-NUM_SONGS_FOR_TRAINING = 200
+NJOBS = 5
+EPS_ACTIVATIONS = 1e-4
+NUM_SONGS_FOR_TRAINING = 100
 EPOCHS = 500
-BATCH_SIZE = 100
+BATCH_SIZE = 75
 EARLY_STOP = 10
-BRANCHES = 128
+BRANCHES = 16
 DATASET_LEN = 1  # use this for debugging
 
 
@@ -75,7 +75,8 @@ def transcribe(audio,
 
     `align` False can be used to use vienna transcription output as score
     """
-    velocity_model = get_default_predict_func(score is None)
+    if not return_mini_specs:
+        velocity_model = get_default_predict_func(score is None)
 
     initW, minpitch, maxpitch = data
     initW = copy(initW)
@@ -103,7 +104,9 @@ def transcribe(audio,
                         res=res,
                         basis=BASIS,
                         velocities=False,
-                        attack=ATTACK)
+                        attack=ATTACK,
+                        eps=EPS_ACTIVATIONS,
+                        eps_range=0.1)
 
     # remove trailing zeros in initH
     nonzero_cols = pr.any(axis=0).nonzero()[0]
@@ -167,7 +170,9 @@ def transcribe(audio,
             initH[int(note[0] - minpitch), :, start:end]
 
         # normalizing with rms
-        mini_spec /= (mini_spec**2).mean()**0.5
+        # mini_spec /= (mini_spec**2).mean()**0.5
+        # normalizing to the sum
+        mini_spec /= mini_spec.sum()
 
         mini_specs.append(mini_spec)
 
@@ -251,7 +256,7 @@ def create_mini_specs(data, mini_spec_path):
 
 
 class VelocityEstimation(nn.Module):
-    def __init__(self, in_numel=2000, branches=BRANCHES, k=2):
+    def __init__(self, in_numel=MINI_SPEC_SIZE * 100, branches=BRANCHES, k=2):
         super().__init__()
 
         self.preprocess = nn.Sequential(nn.BatchNorm2d(1), nn.Dropout(0.3))
@@ -264,10 +269,16 @@ class VelocityEstimation(nn.Module):
 
         for i in range(branches):
             self.process.append(
-                nn.Sequential(nn.Linear(in_numel, k, bias=True), nn.SELU()))
+                nn.Sequential(
+                    nn.Linear(in_numel, in_numel, bias=False),
+                    nn.SELU(),
+                    nn.Linear(in_numel, in_numel, bias=False),
+                    nn.SELU(),
+                    nn.Linear(in_numel, k, bias=False),
+                    nn.SELU())
+            )
 
         self.finalize = nn.Sequential(
-            # TODO 3
             # nn.Linear(branches * k, branches * k, bias=False),
             # nn.SELU(),
             # nn.Linear(branches * k, branches * k, bias=False),
@@ -379,7 +390,7 @@ def train(data, model_path, mini_spec_path):
                                              batch_size=BATCH_SIZE)
     del train_x, train_y, valid_x, valid_y, test_x, test_y, inputs, targets
 
-    optim = torch.optim.Adadelta(model.parameters(), lr=1e-3)
+    optim = torch.optim.Adadelta(model.parameters(), lr=1e-4)
 
     best_epoch = 0
     best_params = None
