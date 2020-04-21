@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <waet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="test-schema.xsd">
-    <setup interface="discrete" projectReturn="save.php" returnURL="" randomiseOrder="true" poolSize="5" loudness="-23" crossFade="1" randomiseAxisOrder="false" preSilence="1" postSilence="1" playOne="false" minNumberPlays="0">
+    <setup interface="discrete" projectReturn="save.php" returnURL="" randomiseOrder="true" poolSize="7" loudness="-23" crossFade="1" randomiseAxisOrder="false" preSilence="1" postSilence="1" playOne="false" minNumberPlays="0">
         <exitText>Thank you for participating in this listening test. You may now exit the test environment.
 
             If you have any suggestions or comment, please report it to [federico.simonetta@unimi.it](mailto:federico.simonetta@unimi.it).</exitText>
@@ -74,18 +74,12 @@
             <surveystatement id="training_statement">
                 <statement>For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio.
 
-Note that these are different performances because the piano, the microphones, and the environment change.
-
                     The following is only a simple test to let you get confident with the interface. You can play the reference audio and then listen to the other audio clips. You can listen to everything any number of times. Take all the time you need!</statement>
             </surveystatement>
         </survey>
         <survey location="post" showBackButton="true">
             <surveystatement id="rest_medoid_statement">
-                <statement>For each of the following recordings, rate how much you think the _interpretation_ is similar to the target audio?
-
-Note that these are different performances because the piano, the microphones, and the environment changed.
-
-                    From now on, your answers will be used for our research!</statement>
+                <statement>From now on, your answers will be used for our research!</statement>
             </surveystatement>
         </survey>
     </page>
@@ -214,7 +208,7 @@ Note that these are different performances because the piano, the microphones, a
     </page>
 
     <!-- PAGES ABOUT RESYNTHESIS -->
-    <page id="resynth_medoid" hostURL="excerpts/q0_medoid_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="resynth_medoid" hostURL="excerpts/q1_medoid_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -239,7 +233,7 @@ Note that these are different performances because the piano, the microphones, a
         <survey location="pre" showBackButton="true"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="resynth_n0" hostURL="excerpts/q0_n0_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="resynth_n0" hostURL="excerpts/q1_n0_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -263,7 +257,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="resynth_n0-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="resynth_n1" hostURL="excerpts/q0_n1_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="resynth_n1" hostURL="excerpts/q1_n1_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -287,7 +281,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="resynth_n1-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="resynth_n2" hostURL="excerpts/q0_n2_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="resynth_n2" hostURL="excerpts/q1_n2_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -311,7 +305,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="resynth_n2-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="resynth_n3" hostURL="excerpts/q0_n3_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="resynth_n3" hostURL="excerpts/q1_n3_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -337,7 +331,7 @@ Note that these are different performances because the piano, the microphones, a
     </page>
 
     <!-- PAGES ABOUT TRANSCRIPTION -->
-    <page id="transcr_medoid" hostURL="excerpts/q0_medoid_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="transcr_medoid" hostURL="excerpts/q2_medoid_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -362,7 +356,7 @@ Note that these are different performances because the piano, the microphones, a
         <survey location="pre" showBackButton="true"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="transcr_n0" hostURL="excerpts/q0_n0_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="transcr_n0" hostURL="excerpts/q2_n0_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -386,7 +380,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="transcr_n0-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="transcr_n1" hostURL="excerpts/q0_n1_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="transcr_n1" hostURL="excerpts/q2_n1_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -410,7 +404,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="transcr_n1-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="transcr_n2" hostURL="excerpts/q0_n2_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="transcr_n2" hostURL="excerpts/q2_n2_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>
@@ -434,7 +428,7 @@ Note that these are different performances because the piano, the microphones, a
         <audioelement url="target.flac" id="transcr_n2-t" gain="0" type="outside-reference"/>
         <survey location="post" showBackButton="true"/>
     </page>
-    <page id="transcr_n3" hostURL="excerpts/q0_n3_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
+    <page id="transcr_n3" hostURL="excerpts/q2_n3_" randomiseOrder="true" repeatCount="0" loop="false" synchronous="false" label="capital" labelStart="" poolSize="0" alwaysInclude="false" preSilence="0" postSilence="0" playOne="false" restrictMovement="false" minNumberPlays="0">
         <commentboxprefix>Comment on track</commentboxprefix>
         <interface name="interpretation">
             <title/>

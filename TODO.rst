@@ -6,6 +6,5 @@ TODO
 #. debug
 #. extract excerpts
 #. chose vst (do we still need the scales?)
-#. set up tests with a script
 #. objective evaluation over SMD and over extracted excerpts
 #. script for comparing objective and subjective evaluation

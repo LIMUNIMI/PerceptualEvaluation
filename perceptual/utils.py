@@ -56,17 +56,18 @@ def farthest_points(samples, k, n, optimize=False):
         kth_cluster = samples[clusters == i + 1]
         kth_cluster_indices = np.where(clusters == i + 1)[0]
 
-        # for each point in the cluster, we compute the centroid of the whole
-        # set minus that point:
+        # 2.0. for each point in the cluster, we compute the centroid in the
+        # set obtained by removing that point (complementary set):
         others_centroid = np.empty_like(kth_cluster)
         for l, j in enumerate(kth_cluster_indices):
             others = np.concatenate((samples[:j], samples[j + 1:]))
             others_centroid[l] = np.mean(others, axis=0)
 
-        # now we compute the distance from each point of the cluster and the
-        # centroid of their complementary set; then, we take the n largest
-        # values, that is: the n points that are most distant from the centroid
-        # of their complementary set.
+        # 2.1. now we compute the distance from each point of the cluster and
+        # the centroid of their complementary set
+
+        # 2.2. we take the n largest values, that is: the n points that are
+        # most distant from the centroid of their complementary set
 
         # N.B. np.partition returns an array with the `-n`-th element in the
         # position it would be if sorted and all larger value after it (not
