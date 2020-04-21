@@ -34,30 +34,16 @@ This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
 original performances and will create a new directory ``audio`` with all
 extracted excerpts and midi aligned.
 
-.. You still need to create the corresponding scores for testing the
-.. score-informed method. You can find original scores in ``my_scores``
-.. directory, but you have to segment them by hand. Name them with the same name
-.. of audio file but extension '-score.mid'
-
-.. Transcribe excerpts
-.. -------------------
-
-.. #. ``poetry run python -m perceptual.transcribe``
-
-.. This will transcribe excerpts and will store them as midi file in the ``excerpt``
-.. folder.
-
 Chose vsts
 ----------
 
-.. #. Build scales: ``poetry run python -m perceptual.midi_test_creation``
 #. Synthesize the chosen excerpts with vsts. You can download our
-   synthesized midis from [url]; extract them in the ``audio`` directory.
+   synthesized midis from our mega_; extract them in the ``audio`` directory.
    You should have a directory for each vst in ``audio`` and for each vst you
    should have 5 different audio. In the root of ``audio`` you should also have
    the original recordings.
 #. Analyze chosen excerpts:
-   ``poetry run python -m perceptual.vst_search``
+   ``poetry run python -m perceptual.chose_vst``
 
 This will copy the excerpts relative to the chosen vsts to the folder ``excerpts``.
 
@@ -74,7 +60,8 @@ Set up your server (Python or PHP) and download WAET_.
 
 You should be able to access your test at ``/test.html?url=/php/pool.php``. More info in the WAET wiki_
 
-``index.html`` contains the instructions for the test.
+``index.html`` contains the instructions for the test, so that you can
+distribute the url to the root of WAET to your partecipants.
 
 .. _WAET: https://github.com/BrechtDeMan/WebAudioEvaluationTool
 .. _wiki: https://github.com/BrechtDeMan/WebAudioEvaluationTool/wiki/Pooling-tests
