@@ -34,25 +34,25 @@ def evaluate(targ, pred):
     t1 -= np.min(t1)
     t2 -= np.min(t2)
 
-    if t1.shape == t2.shape:
-        print(f"MAE timing error: {np.mean(np.abs(t1 - t2)): .4}")
-
     out = np.empty((2, 3))
     evaluation = mir_eval.transcription.evaluate(t1, p1, t2, p2)
     out[0, 0] = evaluation['Precision']
     out[0, 1] = evaluation['Recall']
     out[0, 2] = evaluation['F-measure']
 
-    evaluation = mir_eval.transcription_velocity.evaluate(t1,
-                                                          p1,
-                                                          v1,
-                                                          t2,
-                                                          p2,
-                                                          v2,
-                                                          rcond=None)
-    out[1, 0] = evaluation['Precision']
-    out[1, 1] = evaluation['Recall']
-    out[1, 2] = evaluation['F-measure']
+    try:
+        evaluation = mir_eval.transcription_velocity.evaluate(t1,
+                                                              p1,
+                                                              v1,
+                                                              t2,
+                                                              p2,
+                                                              v2,
+                                                              rcond=None)
+        out[1, 0] = evaluation['Precision']
+        out[1, 1] = evaluation['Recall']
+        out[1, 2] = evaluation['F-measure']
+    except Exception:
+        out[1] = [0, 0, 0]
     return out
 
 
