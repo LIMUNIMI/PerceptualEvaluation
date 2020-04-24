@@ -17,8 +17,9 @@ Environment
 #. ``cd <repo>``
 #. ``pyenv local 3.6.9``
 #. ``poetry install``
-#. ``pip install git+https://github.com/CPJKU/madmom -c constraints.txt`` (this is needed because google sucks and has an exact
-   dependency for an old mido version in its requirements.txt)
+#. ``pip install git+https://github.com/CPJKU/madmom -c constraints.txt`` (this
+   is needed because google sucks and has an exact dependency for an old mido
+   version in its requirements.txt)
 
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from ``asmd``
 package:
@@ -60,7 +61,8 @@ Set up your server (Python or PHP) and download WAET_.
    revealjs-url=https://revealjs.com --output index.html --standalone
    index.md``)
 
-You should be able to access your test at ``/test.html?url=/php/pool.php``. More info in the WAET wiki_
+You should be able to access your test at ``/test.html?url=/php/pool.php``.
+More info in the WAET wiki_
 
 ``index.html`` contains the instructions for the test, so that you can
 distribute the url to the root of WAET to your partecipants.
