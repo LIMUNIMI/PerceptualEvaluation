@@ -27,8 +27,6 @@ NUM_EXCERPTS = 4
 QUESTIONS = 1
 #: sample rate for the output excerpts
 OUT_SR = 44100
-#: fade in and fade out duration in seconds
-FADE = 0.5
 #: file format for the excerpts: essentia still has some problem in writing
 #: mp3 in the python version
 FORMAT = 'flac'
@@ -135,17 +133,17 @@ def create_excerpt(audio_path, time, name):
 
     # transcribe
     data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-    # transcription_0, _, _, _ = proposed.transcribe(
-    #     full_audio,
-    #     data,
-    #     score=score)
+    transcription_0, _, _, _ = proposed.transcribe(
+        full_audio,
+        data,
+        score=score)
 
     transcription_1 = magenta_transcription.transcribe(full_audio, SR)
 
-    # transcription_2, _, _, _ = proposed.transcribe(
-    #     full_audio,
-    #     data,
-    #     score=None)
+    transcription_2, _, _, _ = proposed.transcribe(
+        full_audio,
+        data,
+        score=None)
 
     # chose another interpretation
     performance = '01'
@@ -160,12 +158,12 @@ def create_excerpt(audio_path, time, name):
     other_time = remap_original_in_other(original, other, time[0])
     original = segment_mat(original, time[0][0], time[0][1], start_audio)
     other = segment_mat(other, other_time[0], other_time[1], start_audio)
-    # transcription_0 = segment_mat(transcription_0, time[0][0], time[0][1],
-    #                               start_audio)
+    transcription_0 = segment_mat(transcription_0, time[0][0], time[0][1],
+                                  start_audio)
     transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1],
                                   start_audio)
-    # transcription_2 = segment_mat(transcription_2, time[0][0], time[0][1],
-    #                               start_audio)
+    transcription_2 = segment_mat(transcription_2, time[0][0], time[0][1],
+                                  start_audio)
 
     # write scores to `to_be_synthesized` and audios to `excerpts`
     if not os.path.exists('to_be_synthesized'):
@@ -173,23 +171,18 @@ def create_excerpt(audio_path, time, name):
     midi_path = os.path.join('to_be_synthesized', name)
     mat2midipath(original, midi_path + 'orig.mid')
     mat2midipath(other, midi_path + 'other.mid')
-    # mat2midipath(transcription_0, midi_path + 'proposed.mid')
+    mat2midipath(transcription_0, midi_path + 'proposed.mid')
     mat2midipath(transcription_1, midi_path + 'magenta.mid')
-    # mat2midipath(transcription_2, midi_path + 'vienna.mid')
+    mat2midipath(transcription_2, midi_path + 'vienna.mid')
 
     if not os.path.exists('audio'):
         os.mkdir('audio')
-    audio_path = os.path.join('audio', name)
-
-    # apply fade in and fade out (maybe this is better to be performed at
-    # questionnaire creation stage
-    # fade_len = int(FADE * OUT_SR)
-    # fade_array = np.arange(0, 1, 1 / fade_len)
-    # original_audio[:fade_len] *= fade_array
-    # original_audio[-fade_len:] *= fade_array[::-1]
+    audio_path = os.path.join('audio', name) + 'target.' + FORMAT
 
     # write audio
-    esst.MonoWriter(filename=audio_path + 'target.' + FORMAT,
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
+    esst.MonoWriter(filename=audio_path,
                     sampleRate=OUT_SR,
                     format=FORMAT,
                     bitrate=256)(original_audio)
@@ -212,7 +205,8 @@ def segment_mat(mat, start, end, start_audio=0):
         [note for note in mat if note[1] >= start and note[2] <= end])
 
     # make the notes start at 0
-    mat[:, (1, 2)] -= np.min(mat[:, (1, 2)])
+    if len(mat) > 0:
+        mat[:, (1, 2)] -= np.min(mat[:, (1, 2)])
 
     return mat
 

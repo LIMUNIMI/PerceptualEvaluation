@@ -21,24 +21,44 @@ Environment
    is needed because google sucks and has an exact dependency for an old mido
    version in its requirements.txt)
 
-Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from ``asmd``
-package:
+Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from
+``asmd`` package:
 
     ``poetry run python -m asmd.install``
 
 Chose excerpts
 --------------
 
-#. ``poetry run python -m perceptual.excerpt_search``
+#. Download our pretrained vienna model on Maestro and put it in your working
+   dir from our mega_
+#. Train our proposed model or download the pretrained ones from our mega_:
+    #. You will need the template matrix provided in this repo. To rebuild it
+           run ``poetry run python -m perceptual.make_template``. You will need
+           the synthesized scale and the corresponding midi in the ``scales``
+           and ``audio`` folder. You can download them from our mega_
+    #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
+           the dataset of mini_specs or download it from our mega_. 
+    #. dataset size: 
+           - aligned: 474.429 notes (831 batches in test, 178 in train))
+           - vienna: ?? (831 batches in test, 178 in train))
+    #. ``poetry run python -m perceptual.proposed train`` to train our model
+           for velocity estimation and test it. I obtained the following
+           absolute error (avg, std) on the test set:
+               - alignment: 15.11, 10.94 (251 epochs)
+               - vienna:    15.10, 10.93 (326 epochs)
+    #. redo everything with vienna model (use ``--vienna`` for
+           ``create_mini_specs`` and ``train``)
+#. Run ``poetry run python -m perceptual.excerpt_search``
 
 This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
 original performances and will create a new directory ``audio`` with all
-extracted excerpts and midi aligned.
+extracted excerpts audio files and a directory ``to_be_synthesized`` with all
+midi files that you have to synthesize and put in ``audio``
 
 Chose vsts
 ----------
 
-#. Synthesize the chosen excerpts with vsts. You can download our
+#. Synthesize the chosen excerpts with vsts or download our
    synthesized midis from our mega_; extract them in the ``audio`` directory.
    You should have a directory for each vst in ``audio`` and for each vst you
    should have 5 different audio. In the root of ``audio`` you should also have
@@ -46,7 +66,8 @@ Chose vsts
 #. Analyze chosen excerpts:
    ``poetry run python -m perceptual.chose_vst``
 
-This will copy the excerpts relative to the chosen vsts to the folder ``excerpts``.
+This will copy the excerpts relative to the chosen vsts to the folder
+``excerpts``.
 
 
 Build tests
@@ -91,28 +112,9 @@ _________
 Transcription
 _____________
 
-#. Download our pretrained vienna model on Maestro and put it in your working
-   dir from our mega_
-#. Train our proposed model:
-    #. You will need the template matrix provided in this repo. To rebuild it
-           run ``poetry run python -m perceptual.make_template``. You will need
-           the synthesized scale and the corresponding midi in the ``scales``
-           and ``audio`` folder. You can download them from our mega_
-    #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
-           the dataset of mini_specs or download it from out mega_. It contains
-           885 755 mini spectrograms and uncompressed is large 14 GB.
-    #. uncompress the dataset: ``unxz aligned_mini_specs.pkl.xz``
-    #. ``poetry run python -m perceptual.proposed train`` to train our model
-           for velocity estimation and test it; 
-            #. Training set size: 602 100
-            #. Validation and test set size: 132 900
-            #. Final test absolute error (avg, std): 14.73, 10.91 (130 epochs)
-    #. redo everything with vienna model (use ``--vienna`` for
-           ``create_mini_specs`` and ``train``)
-
-#. To run the objective evaluation use [TODO]
-
-    ``poetry run python -m perceptual.objective_eval``
+#. To run the objective evaluation use:
+    #. ``poetry run python -m perceptual.objective_eval SMD``
+    #. ``poetry run python -m perceptual.objective_eval to_be_synthesized``
 
 #. To compare with subjective evaluation, put your perceptual test results in
    ``results`` directory with name ``perceptual.csv`` and run ``poetry run

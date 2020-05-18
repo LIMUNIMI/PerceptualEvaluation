@@ -2,7 +2,7 @@ from madmom.processors import SequentialProcessor
 from madmom.features.notes import ADSRNoteTrackingProcessor, _cnn_pad
 import essentia.standard as esst
 import numpy as np
-from utils import mat2midipath
+from .utils import mat2midipath
 
 VIENNA_MODEL_PATH = ['vienna_model.pkl']
 
@@ -19,9 +19,11 @@ class ViennaMaestroModel(SequentialProcessor):
         from madmom.audio.spectrogram import (FilteredSpectrogramProcessor,
                                               LogarithmicSpectrogramProcessor)
         from madmom.ml.nn import NeuralNetworkEnsemble
+        sr_ratio = 44100 / sr
         # define pre-processing chain
         sig = SignalProcessor(num_channels=1, sample_rate=sr)
-        frames = FramedSignalProcessor(frame_size=4096, fps=50)
+        frames = FramedSignalProcessor(frame_size=4096 // sr_ratio,
+                                       fps=50 // sr_ratio)
         stft = ShortTimeFourierTransformProcessor()  # caching FFT window
         filt = FilteredSpectrogramProcessor(num_bands=24, fmin=30, fmax=10000)
         spec = LogarithmicSpectrogramProcessor(add=1)
@@ -57,7 +59,7 @@ class ADSRMaestro(ADSRNoteTrackingProcessor):
     Just a wrapper with new parameters
     """
 
-    def __init__(self, onset_note_prob=0.9, offset_prob=0.5, threshold=0.5):
+    def __init__(self, onset_note_prob=0.9, offset_prob=0.7, threshold=0.5):
         super().__init__(onset_prob=onset_note_prob,
                          note_prob=onset_note_prob,
                          offset_prob=offset_prob,

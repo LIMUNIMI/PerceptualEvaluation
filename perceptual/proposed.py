@@ -18,8 +18,8 @@ MINI_SPEC_SIZE = 14
 DEVICE = 'cuda'
 ALIGNED_MINI_SPEC_PATH = 'aligned_mini_specs.pkl'
 VIENNA_MINI_SPEC_PATH = 'vienna_mini_specs.pkl'
-ALIGNED_VELOCITY_MODEL_PATH = 'vienna_velocity_model.pkl'
-VIENNA_VELOCITY_MODEL_PATH = 'aligned_velocity_model.pkl'
+ALIGNED_VELOCITY_MODEL_PATH = 'aligned_velocity_model.pkl'
+VIENNA_VELOCITY_MODEL_PATH = 'vienna_velocity_model.pkl'
 COST_FUNC = 'EucDist'
 NJOBS = 5
 EPS_ACTIVATIONS = 1e-4
@@ -65,7 +65,6 @@ def transcribe(audio,
                score=None,
                res=0.001,
                sr=SR,
-               align=True,
                return_mini_specs=False):
     """
     Takes an audio mono file and the non-aligned score mat format as in asmd.
@@ -73,15 +72,13 @@ def transcribe(audio,
     Returns new score with velocities and timings updated
 
     `res` is only used for alignment
-
-    `align` False can be used to use vienna transcription output as score
     """
     if not return_mini_specs:
         velocity_model = get_default_predict_func(score is None)
 
     initW, minpitch, maxpitch = data
     initW = copy(initW)
-    if align:
+    if score is not None:
         from .alignment.align_with_amt import audio_to_score_alignment
         score = copy(score)
         # align score

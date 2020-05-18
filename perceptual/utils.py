@@ -180,19 +180,22 @@ def mat2midipath(mat, path):
     Writes a midi file from a mat like asmd:
 
     pitch, start (sec), end (sec), velocity
-    """
-    # creating pretty_midi.PrettyMIDI object and inserting notes
-    midi = pm.PrettyMIDI()
-    midi.instruments = [pm.Instrument(0)]
-    for row in mat:
-        velocity = int(row[3])
-        if velocity < 0:
-            velocity = 80
-        midi.instruments[0].notes.append(
-            pm.Note(velocity, int(row[0]), float(row[1]), float(row[2])))
 
-    # writing to file
-    midi.write(path)
+    If `mat` is empty, just do nothing.
+    """
+    if len(mat) > 0:
+        # creating pretty_midi.PrettyMIDI object and inserting notes
+        midi = pm.PrettyMIDI()
+        midi.instruments = [pm.Instrument(0)]
+        for row in mat:
+            velocity = int(row[3])
+            if velocity < 0:
+                velocity = 80
+            midi.instruments[0].notes.append(
+                pm.Note(velocity, int(row[0]), float(row[1]), float(row[2])))
+
+        # writing to file
+        midi.write(path)
 
 
 def midipath2mat(path):
