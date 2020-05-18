@@ -63,6 +63,8 @@ Chose vsts
    You should have a directory for each vst in ``audio`` and for each vst you
    should have 5 different audio. In the root of ``audio`` you should also have
    the original recordings.
+#. Install `sox` in your path for post-processing to add reverb or run with
+   `--no-postprocess`
 #. Analyze chosen excerpts:
    ``poetry run python -m perceptual.chose_vst``
 

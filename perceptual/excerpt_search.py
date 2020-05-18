@@ -271,6 +271,8 @@ def audio_features(audio_win):
     """
     returns audio features for a win
     """
+    if audio_win.shape[0] % 2 == 1:
+        audio_win = audio_win[:-1]
     spectrum = esst.Spectrum(size=audio_win.shape[0])(audio_win)
     _bands, mfcc = esst.MFCC(inputSize=spectrum.shape[0],
                              sampleRate=SR)(spectrum)
