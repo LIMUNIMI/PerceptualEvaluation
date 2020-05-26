@@ -85,13 +85,14 @@ Build tests
 Set up your server (Python or PHP) and download WAET_. 
 
 #. place the directory ``excerpts`` in the root of WAET 
-#. place the file ``listening_test.xml`` in ``[WAET root]/tests/pool.xml``
+#. place the directory ``reveal.js-3.9.2`` into the root of WAET
 #. place the file ``index.html`` in the root of WAET (if you want, you can
    regenerate the ``index.html`` by running ``pandoc --to revealjs -V
-   revealjs-url=https://revealjs.com --output index.html --standalone
+   revealjs-url=reveal.js-3.9.2 --output index.html --standalone
    index.md``)
+#. place the file ``listening_test.xml`` in ``[WAET root]/tests/pool.xml``
 
-You should be able to access your test at ``/test.html?url=/php/pool.php``.
+You should be able to access your test at ``/test.html?url=php/pool.php``.
 More info in the WAET wiki_
 
 ``index.html`` contains the instructions for the test, so that you can

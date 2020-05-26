@@ -1,11 +1,6 @@
 ---
 title: Listening test
 
-output:
-    html:
-        to: revealjs
-        variable: revealjs-url=https://revealjs.com
-
 header-includes: 
     <script type='text/js'>
     function remove_ita() {
@@ -30,10 +25,10 @@ header-includes:
     display: block;
   }
   .reveal per{
-    color: green;
+    color: cyan;
   }
   .reveal int{
-    color: blue;
+    color: yellow;
   }
   .reveal a{
     color: red;
@@ -109,9 +104,9 @@ The following videos contain two different <per>performances</per> of the same <
 
 You are now ready to start the test.
 
-You will be asked to listen to a _reference_ audio and then to other 5 performances of the same music. You should rate how much is probable that the performances contain the same <int>interpretation</int> as the _reference_ track. There is no correct answer, since the performances are rendered by computer algorithms.
+You will be asked to listen to a _reference_ audio and then to other 4 performances of the same music. You should rate how much is probable that the performances contain the same <int>interpretation</int> as the _reference_ track. There is no correct answer, since the performances are rendered by computer algorithms.
 
-[Click here to start the test!](./test.html?url=/php/pool.php)
+[Click here to start the test!](./test.html?url=php/pool.php)
 
 ## Introduzione
 
@@ -169,6 +164,6 @@ I seguenti video contengono due <per>esecuzioni</per> della stessa <int>interpre
 
 Sei quasi pronto a iniziare il test.
 
-Ti verrà chiesto di ascoltare un audio di riferimento (_reference_) e poi altre 5 esecuzioni della stessa musca. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c'è una risposta corretta: le 5 performance sono generate da algoritmi informatici e non corrispondono a reali esecuzioni.
+Ti verrà chiesto di ascoltare un audio di riferimento (_reference_) e poi altre 4 esecuzioni dello stesso brano. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c'è una risposta corretta: le 5 performance sono generate da algoritmi informatici e non corrispondono a reali esecuzioni.
 
-[Clicca qui per cominciare il test!](./test.html?url=/php/pool.php)
+[Clicca qui per cominciare il test!](./test.html?url=php/pool.php)

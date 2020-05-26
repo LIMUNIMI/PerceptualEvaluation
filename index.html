@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
-  <link rel="stylesheet" href="https://revealjs.com/css/reset.css">
-  <link rel="stylesheet" href="https://revealjs.com/css/reveal.css">
+  <link rel="stylesheet" href="reveal.js-3.9.2/css/reset.css">
+  <link rel="stylesheet" href="reveal.js-3.9.2/css/reveal.css">
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -17,17 +17,17 @@
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
     ul.task-list{list-style: none;}
   </style>
-  <link rel="stylesheet" href="https://revealjs.com/css/theme/black.css" id="theme">
+  <link rel="stylesheet" href="reveal.js-3.9.2/css/theme/black.css" id="theme">
   <!-- Printing and PDF exports -->
   <script>
     var link = document.createElement( 'link' );
     link.rel = 'stylesheet';
     link.type = 'text/css';
-    link.href = window.location.search.match( /print-pdf/gi ) ? 'https://revealjs.com/css/print/pdf.css' : 'https://revealjs.com/css/print/paper.css';
+    link.href = window.location.search.match( /print-pdf/gi ) ? 'reveal.js-3.9.2/css/print/pdf.css' : 'reveal.js-3.9.2/css/print/paper.css';
     document.getElementsByTagName( 'head' )[0].appendChild( link );
   </script>
   <!--[if lt IE 9]>
-  <script src="https://revealjs.com/lib/js/html5shiv.js"></script>
+  <script src="reveal.js-3.9.2/lib/js/html5shiv.js"></script>
   <![endif]-->
   <script type='text/js'> function remove_ita() { // TODO }
   function remove_eng() { // TODO } </script>
@@ -54,10 +54,10 @@
     display: block;
   }
   .reveal per{
-    color: green;
+    color: cyan;
   }
   .reveal int{
-    color: blue;
+    color: yellow;
   }
   .reveal a{
     color: red;
@@ -112,8 +112,8 @@
 <section class="slide level2">
 
 <p>You are now ready to start the test.</p>
-<p>You will be asked to listen to a <em>reference</em> audio and then to other 5 performances of the same music. You should rate how much is probable that the performances contain the same <int>interpretation</int> as the <em>reference</em> track. There is no correct answer, since the performances are rendered by computer algorithms.</p>
-<p><a href="./test.html?url=/php/pool.php">Click here to start the test!</a></p>
+<p>You will be asked to listen to a <em>reference</em> audio and then to other 4 performances of the same music. You should rate how much is probable that the performances contain the same <int>interpretation</int> as the <em>reference</em> track. There is no correct answer, since the performances are rendered by computer algorithms.</p>
+<p><a href="./test.html?url=php/pool.php">Click here to start the test!</a></p>
 </section>
 <section id="introduzione" class="slide level2">
 <h2>Introduzione</h2>
@@ -139,7 +139,7 @@
 <p>Se pensi di non aver capito la differenza, prova a pensare così:</p>
 <ul>
 <li>una <per>esecuzione</per> corrisponde a un particolare concerto</li>
-<li>una <int>inteprpretazione</int> corrisponde a un particolare esecutore</li>
+<li>una <int>interpretazione</int> corrisponde a un particolare esecutore</li>
 </ul>
 <p>Ad esempio, Arturo Toscanini a diretto svariate volte la Nona di Beethoven con la NBC Orchestra, tentando di realizzare la medesima (o quasi) <int>interpretazione</int>, ma in ciascun concerto, l’<per>esecuzione</per> ha avuto qualche aspetto differente dovuto alla stanza, agli strumenti, al pubblico, etc.</p>
 </section>
@@ -159,13 +159,13 @@
 <section class="slide level2">
 
 <p>Sei quasi pronto a iniziare il test.</p>
-<p>Ti verrà chiesto di ascoltare un audio di riferimento (<em>reference</em>) e poi altre 5 esecuzioni della stessa musca. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c’è una risposta corretta: le 5 performance sono generate da algoritmi informatici e non corrispondono a reali esecuzioni.</p>
-<p><a href="./test.html?url=/php/pool.php">Clicca qui per cominciare il test!</a></p>
+<p>Ti verrà chiesto di ascoltare un audio di riferimento (<em>reference</em>) e poi altre 4 esecuzioni dello stesso brano. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c’è una risposta corretta: le 5 performance sono generate da algoritmi informatici e non corrispondono a reali esecuzioni.</p>
+<p><a href="./test.html?url=php/pool.php">Clicca qui per cominciare il test!</a></p>
 </section>
     </div>
   </div>
 
-  <script src="https://revealjs.com/js/reveal.js"></script>
+  <script src="reveal.js-3.9.2/js/reveal.js"></script>
 
   <script>
 
@@ -177,9 +177,9 @@
 
         // Optional reveal.js plugins
         dependencies: [
-          { src: 'https://revealjs.com/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-          { src: 'https://revealjs.com/plugin/zoom-js/zoom.js', async: true },
-          { src: 'https://revealjs.com/plugin/notes/notes.js', async: true }
+          { src: 'reveal.js-3.9.2/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+          { src: 'reveal.js-3.9.2/plugin/notes/notes.js', async: true }
         ]
       });
     </script>
