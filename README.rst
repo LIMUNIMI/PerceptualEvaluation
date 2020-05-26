@@ -31,23 +31,30 @@ Chose excerpts
 
 #. Download our pretrained vienna model on Maestro and put it in your working
    dir from our mega_
+   
 #. Train our proposed model or download the pretrained ones from our mega_:
-    #. You will need the template matrix provided in this repo. To rebuild it
-           run ``poetry run python -m perceptual.make_template``. You will need
-           the synthesized scale and the corresponding midi in the ``scales``
-           and ``audio`` folder. You can download them from our mega_
-    #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
-           the dataset of mini-specs or download it from our mega_. 
-    #. dataset size: 
-           - aligned: 474.429 notes (831 batches in test, 178 in train))
-           - vienna: ?? (831 batches in test, 178 in train))
-    #. ``poetry run python -m perceptual.proposed train`` to train our model
-           for velocity estimation and test it. I obtained the following
-           absolute error (avg, std) on the test set:
-               - alignment: 15.11, 10.94 (251 epochs)
-               - vienna:    15.10, 10.93 (326 epochs)
-    #. redo everything with vienna model (use ``--vienna`` for
-           ``create_mini_specs`` and ``train``)
+
+#. You will need the template matrix provided in this repo. To rebuild it
+   run ``poetry run python -m perceptual.make_template``. You will need
+   the synthesized scale and the corresponding midi in the ``scales``
+   and ``audio`` folder. You can download them from our mega_
+
+   #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
+      the dataset of mini-specs or download it from our mega_. 
+
+   #. dataset size: 
+      - aligned: 474.429 notes (831 batches in test, 178 in train))
+      - vienna: ?? (831 batches in test, 178 in train))
+
+   #. ``poetry run python -m perceptual.proposed train`` to train our model
+      for velocity estimation and test it. I obtained the following
+      absolute error (avg, std) on the test set:
+      - alignment: 15.11, 10.94 (251 epochs)
+      - vienna:    15.10, 10.93 (326 epochs)
+
+   #. redo everything with vienna model (use ``--vienna`` for
+      ``create_mini_specs`` and ``train``)
+
 #. Run ``poetry run python -m perceptual.excerpt_search``
 
 This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
@@ -97,7 +104,7 @@ Objective evaluation
 --------------------
 
 Alignment
-_________
+~~~~~~~~~
 
 #. Install fluidsynth and download SalamanderGrandPianoV3 soundfont in sf2 format
    from our mega_ folder and put it in your working dir
@@ -112,17 +119,18 @@ _________
    results/amt.csv`` to plot the results of alignment
 
 Transcription
-_____________
+~~~~~~~~~~~~~
 
 #. To run the objective evaluation use:
-    #. ``poetry run python -m perceptual.objective_eval SMD``
-    #. ``poetry run python -m perceptual.objective_eval to_be_synthesized``
 
+   #. ``poetry run python -m perceptual.objective_eval SMD``
+   #. ``poetry run python -m perceptual.objective_eval to_be_synthesized``
+    
 #. To compare with subjective evaluation, put your perceptual test results in
    ``results`` directory with name ``perceptual.csv`` and run ``poetry run
    python -m perceptual.compare_eval``. This will create csv files in
    ``results`` directory. [TODO]
-
+   
 #. To plot them use ``poetry run python -m perceptual.plots``. [TODO]
 
 
@@ -227,8 +235,8 @@ Question type 1
    - transcribed performance with method 2 with instrument 3
    - score-informed transcription (auto-alignment + velocity estimation) with instrument 3
 
-Each score can be computed with the *“Absolute Category Rating with
-Hidden Reference”* (ACR-HR): score - scorehr + 6
+Each score can be computed with the *Absolute Category Rating with
+Hidden Reference* (ACR-HR): score - scorehr + 6
 
 This poll wants to answer to questions 2 and 3. Question 2 is answered
 positively if the hr has high scores and the nr has low scores.
@@ -249,8 +257,8 @@ Question type 2
    - transcribed performance with method 2 with instrument 2
    - score-informed transcription (auto-alignment + velocity estimation) with instrument 2
 
-Each score can be computed with the *“Absolute Category Rating with
-Hidden Reference”* (ACR-HR): score - scorehr + 6
+Each score can be computed with the *Absolute Category Rating with
+Hidden Reference* (ACR-HR): score - scorehr + 6
 
 This poll wants to answer to questions 2 and 3. Question 2 is answered
 positively if the hr has high scores and the nr has low scores.
