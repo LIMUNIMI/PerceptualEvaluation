@@ -37,7 +37,7 @@ Chose excerpts
            the synthesized scale and the corresponding midi in the ``scales``
            and ``audio`` folder. You can download them from our mega_
     #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
-           the dataset of mini_specs or download it from our mega_. 
+           the dataset of mini-specs or download it from our mega_. 
     #. dataset size: 
            - aligned: 474.429 notes (831 batches in test, 178 in train))
            - vienna: ?? (831 batches in test, 178 in train))
@@ -63,8 +63,8 @@ Chose vsts
    You should have a directory for each vst in ``audio`` and for each vst you
    should have 5 different audio. In the root of ``audio`` you should also have
    the original recordings.
-#. Install `sox` in your path for post-processing to add reverb or run with
-   `--no-postprocess`
+#. Install ``sox`` in your path for post-processing to add reverb or run with
+   ``--no-postprocess``
 #. Analyze chosen excerpts:
    ``poetry run python -m perceptual.chose_vst``
 
@@ -99,7 +99,7 @@ Objective evaluation
 Alignment
 _________
 
-#. Install fluidsynth and download SalamanderGrandPiano soundfont in sf2 format
+#. Install fluidsynth and download SalamanderGrandPianoV3 soundfont in sf2 format
    from our mega_ folder and put it in your working dir
 #. run ``poetry run python -m perceptual.alignment.dtw_tuning`` to check the
    FastDTW tuning in midi2midi over ``MusicNet`` solo piano songs
@@ -228,7 +228,7 @@ Question type 1
    - score-informed transcription (auto-alignment + velocity estimation) with instrument 3
 
 Each score can be computed with the *“Absolute Category Rating with
-Hidden Reference”* (ACR-HR): score - score_hr + 6
+Hidden Reference”* (ACR-HR): score - scorehr + 6
 
 This poll wants to answer to questions 2 and 3. Question 2 is answered
 positively if the hr has high scores and the nr has low scores.
@@ -250,7 +250,7 @@ Question type 2
    - score-informed transcription (auto-alignment + velocity estimation) with instrument 2
 
 Each score can be computed with the *“Absolute Category Rating with
-Hidden Reference”* (ACR-HR): score - score_hr + 6
+Hidden Reference”* (ACR-HR): score - scorehr + 6
 
 This poll wants to answer to questions 2 and 3. Question 2 is answered
 positively if the hr has high scores and the nr has low scores.
@@ -272,8 +272,8 @@ Question type 3
    - score-informed transcription (auto-alignment + velocity estimation) with instrument 3
 
 With this question, we want to compare various transcription systems.
-Each score can be computed with the *“Absolute Category Rating with
-Hidden Reference”* (ACR-HR): score - score_hr + 6
+Each score can be computed with the *Absolute Category Rating with
+Hidden Reference* (ACR-HR): score - scorehr + 6
 
 This poll wants to answer to question 4.
 
