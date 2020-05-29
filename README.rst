@@ -78,6 +78,10 @@ Chose vsts
 This will copy the excerpts relative to the chosen vsts to the folder
 ``excerpts``.
 
+Chosen vsts: 
+- q0: ./audio/salamander                                                 
+- q1: ['./audio/pianoteq1', './audio/salamander-norm_-20_reverb_50_norm']
+- q2: ./audio/pianoteq1-norm_-20_reverb_100_norm                         
 
 Build tests
 -----------
@@ -91,6 +95,7 @@ Set up your server (Python or PHP) and download WAET_.
    revealjs-url=reveal.js-3.9.2 --output index.html --standalone
    index.md``)
 #. place the file ``listening_test.xml`` in ``[WAET root]/tests/pool.xml``
+#. place the file ``core.css`` in ``[WAET root]/css/core.css``
 
 You should be able to access your test at ``/test.html?url=php/pool.php``.
 More info in the WAET wiki_

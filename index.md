@@ -1,16 +1,6 @@
 ---
 title: Listening test
 
-header-includes: 
-    <script type='text/js'>
-    function remove_ita() {
-        // TODO
-    }
-
-    function remove_eng() {
-         // TODO
-    }
-    </script>
 ---
 
 <style type="text/css">
@@ -47,7 +37,7 @@ Chose your language
 ## Introduction
 
 In this test, we will investigate how computers can
-represent musical performances.
+reproduce musical performances.
 
 It will take about 20-25 minutes.
 
@@ -78,12 +68,12 @@ Consequently, the environment influences the <per>performance</per> of the music
 
 If you are still unsure about the difference, imagine this:
 
-* a <per>performance</per> corresponds to a particular exhibition
+* a <per>performance</per> corresponds to a specific exhibition
 * an <int>interpretation</int> corresponds to the performer
 
-For instance, the orchestra director Arturo Toscanini performed
+For instance, the conductor Arturo Toscanini performed
 the 9th Symphony several times with the NBC Orchestra, trying to
-render the same (or almost the same) <int>interpretation</int>, but in each exhibition the <per>performance</per> had some different musical aspect due to the the room, the instruments, the public, and so on.
+render the same (or almost the same) <int>interpretation</int>, but in each exhibition the <per>performance</per> had some different musical aspects due to the the hall, the instruments, the public, and so on.
 
 ---
 
@@ -104,13 +94,13 @@ The following videos contain two different <per>performances</per> of the same <
 
 You are now ready to start the test.
 
-You will be asked to listen to a _reference_ audio and then to other 4 performances of the same music. You should rate how much is probable that the performances contain the same <int>interpretation</int> as the _reference_ track. There is no correct answer, since the performances are rendered by computer algorithms.
+You will be asked to listen to a _reference_ audio and then to 4 additional performances of the same music. You should rate how likely it is that the performances contain the same <int>interpretation</int> as the _reference_ track. There is no correct answer: the performances are rendered by computer algorithms!
 
 [Click here to start the test!](./test.html?url=php/pool.php)
 
 ## Introduzione
 
-In questo test indaghiamo i metodi con cui i computer possono rappresentare le esecuzioni musicali.
+In questo test indaghiamo i metodi con cui i computer possono riprodurre le esecuzioni musicali.
 
 Il test richiederà circa 20-25 minuti.
 
@@ -122,7 +112,7 @@ Ora leggerai alcuni semplici concetti necessari per partecipare al test.
 
 ## Esecuzione
 
-In questo test, la parola <per>esecuzione</per> viene usata per riferirsi
+In questo test, la parola <per>esecuzione</per> ( *performance* in inglese) viene usata per riferirsi
 all'insieme degli eventi fisici che hanno come effetto l'atto del suonare un brano musicale.
 
 Ad esempio, La Nona Sinfonia di Beethoven è stata _eseguita_ svariate volte in
@@ -140,7 +130,7 @@ Di conseguenza, l'ambiente influenza l'<per>esecuzione</per> dei musicisti, i qu
 
 Se pensi di non aver capito la differenza, prova a pensare così:
 
-* una <per>esecuzione</per> corrisponde a un particolare concerto
+* una <per>esecuzione</per> corrisponde a un specifico concerto
 * una <int>interpretazione</int> corrisponde a un particolare esecutore
 
 Ad esempio, Arturo Toscanini a diretto svariate volte la Nona di Beethoven con la NBC Orchestra, tentando di realizzare la medesima (o quasi) <int>interpretazione</int>, ma in ciascun concerto, l'<per>esecuzione</per> ha avuto qualche aspetto differente dovuto alla stanza, agli strumenti, al pubblico, etc.
@@ -164,6 +154,6 @@ I seguenti video contengono due <per>esecuzioni</per> della stessa <int>interpre
 
 Sei quasi pronto a iniziare il test.
 
-Ti verrà chiesto di ascoltare un audio di riferimento (_reference_) e poi altre 4 esecuzioni dello stesso brano. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c'è una risposta corretta: le 5 performance sono generate da algoritmi informatici e non corrispondono a reali esecuzioni.
+Ti verrà chiesto di ascoltare un audio di riferimento (_reference_) e poi altre 4 esecuzioni dello stesso brano. Dovrai dare un giudizio di quanto è probabile che le esecuzioni contengano la stessa <int>interpretazione</int> della audio di riferimento. Non c'è una risposta corretta: gli audio sono generati da algoritmi informatici!
 
 [Clicca qui per cominciare il test!](./test.html?url=php/pool.php)

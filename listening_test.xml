@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <waet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="test-schema.xsd">
-    <setup interface="horizontal" projectReturn="save.php" returnURL="" randomiseOrder="true" poolSize="7" loudness="-23" crossFade="0.5" randomiseAxisOrder="false" preSilence="0" postSilence="0" playOne="false" minNumberPlays="1">
-        <exitText>Thank you for participating in this listening test. You may now exit the test environment.
-
-            If you have any suggestions or comment, please report it to [federico.simonetta@unimi.it](mailto:federico.simonetta@unimi.it).</exitText>
-        <calibration checkFrequencies="true" checkLevels="true" checkChannels="false"/>
-        <survey location="pre" showBackButton="true">
+    <setup interface="horizontal" projectReturn="save.php" returnURL="" randomiseOrder="true" poolSize="7" loudness="-23" crossFade="0.5" preSilence="0" postSilence="0" playOne="false" minNumberPlays="1">
+        <exitText>Thank you for participating in this listening test. You may now exit the test environment. If you have any suggestions or comment, please report it to [federico.simonetta@unimi.it](mailto:federico.simonetta@unimi.it).</exitText>
+        <survey location="pre">
             <surveyradio id="expertise" mandatory="true">
                 <statement>Have you ever studied music? 
 
@@ -36,8 +33,17 @@
                 <option name="3">between 3 and 6 hours per week / tra 3 e 6 ore a settimana</option>
                 <option name="4">more than 6 hours per week / piu' di 6 ore a settimana</option>
             </surveyradio>
+            <surveyradio id="headphones" mandatory="true">
+                <statement>How much cost the headphones you are using?
+
+            _Quanto costano le cuffie che stai usando?_ </statement>
+                <option name="0">0 - 10 euro</option>
+                <option name="1">10 - 20 euro</option>
+                <option name="2">20 - 40 euro</option>
+                <option name="3">> 50 euro</option>
+            </surveyradio>
         </survey>
-        <survey location="post" showBackButton="true">
+        <survey location="post">
             <surveyquestion id="comments" boxsize="normal">
                 <statement>If you have comments about this test, please insert them here :)
 
@@ -55,27 +61,28 @@
             <interfaceoption name="volume" type="show"/>
             <interfaceoption name="ticks" type="show"/>
             <interfaceoption name="playhead" type="show"/>
+            <interfaceoption name="page-count" type="show"/>
         </interface>
     </setup>
-    <page id="training" hostURL="excerpts/training-" position="0">
+    <page id="training" hostURL="excerpts/training-" position="0" randomiseOrder="true">
         <interface name="interpretation">
-            <title/>
+            <title>Training</title>
             <interfaceoption type="check" name="fragmentPlayed"/>
             <interfaceoption type="check" name="fragmentFullPlayback"/>
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="0.flac" id="training-0" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="1.flac" id="training-1" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="t.flac" id="training-t" gain="0" type="outside-reference"/>
-        <survey location="pre" showBackButton="true">
+        <survey location="pre">
             <surveystatement id="training_statement">
                 <statement>For each of the following recordings, rate how much you think the _interpretation_ is similar to the "reference" audio.
 
@@ -89,7 +96,7 @@
             </statement>
             </surveystatement>
         </survey>
-        <survey location="post" showBackButton="true">
+        <survey location="post">
             <surveystatement id="rest_medoid_statement">
                 <statement>From now on, your answers will be used for our research!
 
@@ -99,7 +106,7 @@
     </page>
 
     <!-- PAGES ABOUT RESTORATION -->
-    <page id="rest_medoid" hostURL="excerpts/q0_medoid_">
+    <page id="rest_medoid" hostURL="excerpts/q0_medoid_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -107,11 +114,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="rest_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -120,10 +127,10 @@
         <!-- <audioelement url="vienna.flac" id="rest_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="rest_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="rest_medoid-t" gain="0" type="outside-reference"/>
-        <survey location="pre" showBackButton="true"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="pre"/>
+        <survey location="post"/>
     </page>
-    <page id="rest_n0" hostURL="excerpts/q0_n0_">
+    <page id="rest_n0" hostURL="excerpts/q0_n0_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -131,11 +138,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="rest_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -144,9 +151,9 @@
         <!-- <audioelement url="vienna.flac" id="rest_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="rest_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="rest_n0-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="rest_n1" hostURL="excerpts/q0_n1_">
+    <page id="rest_n1" hostURL="excerpts/q0_n1_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -154,11 +161,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="rest_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -167,9 +174,9 @@
         <!-- <audioelement url="vienna.flac" id="rest_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="rest_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="rest_n1-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="rest_n2" hostURL="excerpts/q0_n2_">
+    <page id="rest_n2" hostURL="excerpts/q0_n2_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -177,11 +184,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="rest_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -190,9 +197,9 @@
         <!-- <audioelement url="vienna.flac" id="rest_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="rest_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="rest_n2-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="rest_n3" hostURL="excerpts/q0_n3_">
+    <page id="rest_n3" hostURL="excerpts/q0_n3_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -200,11 +207,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="rest_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -213,11 +220,11 @@
         <!-- <audioelement url="vienna.flac" id="rest_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="rest_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="rest_n3-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
 
     <!-- PAGES ABOUT RESYNTHESIS -->
-    <page id="resynth_medoid" hostURL="excerpts/q1_medoid_">
+    <page id="resynth_medoid" hostURL="excerpts/q1_medoid_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -225,11 +232,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="resynth_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -238,10 +245,10 @@
         <!-- <audioelement url="vienna.flac" id="resynth_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="resynth_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="resynth_medoid-t" gain="0" type="outside-reference"/>
-        <survey location="pre" showBackButton="true"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="pre"/>
+        <survey location="post"/>
     </page>
-    <page id="resynth_n0" hostURL="excerpts/q1_n0_">
+    <page id="resynth_n0" hostURL="excerpts/q1_n0_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -249,11 +256,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="resynth_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -262,9 +269,9 @@
         <!-- <audioelement url="vienna.flac" id="resynth_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="resynth_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="resynth_n0-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="resynth_n1" hostURL="excerpts/q1_n1_">
+    <page id="resynth_n1" hostURL="excerpts/q1_n1_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -272,11 +279,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="resynth_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -285,9 +292,9 @@
         <!-- <audioelement url="vienna.flac" id="resynth_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="resynth_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="resynth_n1-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="resynth_n2" hostURL="excerpts/q1_n2_">
+    <page id="resynth_n2" hostURL="excerpts/q1_n2_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -295,11 +302,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="resynth_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -308,9 +315,9 @@
         <!-- <audioelement url="vienna.flac" id="resynth_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="resynth_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="resynth_n2-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="resynth_n3" hostURL="excerpts/q1_n3_">
+    <page id="resynth_n3" hostURL="excerpts/q1_n3_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -318,11 +325,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="resynth_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -331,11 +338,11 @@
         <!-- <audioelement url="vienna.flac" id="resynth_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="resynth_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="resynth_n3-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
 
     <!-- PAGES ABOUT TRANSCRIPTION -->
-    <page id="transcr_medoid" hostURL="excerpts/q2_medoid_">
+    <page id="transcr_medoid" hostURL="excerpts/q2_medoid_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -343,11 +350,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="transcr_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -356,10 +363,10 @@
         <!-- <audioelement url="vienna.flac" id="transcr_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="transcr_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="transcr_medoid-t" gain="0" type="outside-reference"/>
-        <survey location="pre" showBackButton="true"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="pre"/>
+        <survey location="post"/>
     </page>
-    <page id="transcr_n0" hostURL="excerpts/q2_n0_">
+    <page id="transcr_n0" hostURL="excerpts/q2_n0_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -367,11 +374,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="transcr_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -380,9 +387,9 @@
         <!-- <audioelement url="vienna.flac" id="transcr_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="transcr_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="transcr_n0-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="transcr_n1" hostURL="excerpts/q2_n1_">
+    <page id="transcr_n1" hostURL="excerpts/q2_n1_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -390,11 +397,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="transcr_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -403,9 +410,9 @@
         <!-- <audioelement url="vienna.flac" id="transcr_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="transcr_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="transcr_n1-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="transcr_n2" hostURL="excerpts/q2_n2_">
+    <page id="transcr_n2" hostURL="excerpts/q2_n2_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -413,11 +420,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="transcr_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -426,9 +433,9 @@
         <!-- <audioelement url="vienna.flac" id="transcr_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="transcr_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="transcr_n2-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
-    <page id="transcr_n3" hostURL="excerpts/q2_n3_">
+    <page id="transcr_n3" hostURL="excerpts/q2_n3_" randomiseOrder="true">
         <interface name="interpretation">
             <title/>
             <interfaceoption type="check" name="fragmentPlayed"/>
@@ -436,11 +443,11 @@
             <interfaceoption type="check" name="scalerange"/>
             <interfaceoption type="show" name="volume"/>
             <scales>
-                <scalelabel position="0">Different interpretations / interpretazioni diverse</scalelabel>
+                <scalelabel position="0">Different interpretations</scalelabel>
                 <scalelabel position="25"/>
-                <scalelabel position="50">Impossible to understand / impossibile da capire</scalelabel>
+                <scalelabel position="50">Don't know</scalelabel>
                 <scalelabel position="75"/>
-                <scalelabel position="100">Same interpretation / stessa interpretazione</scalelabel>
+                <scalelabel position="100">Same interpretation</scalelabel>
             </scales>
         </interface>
         <audioelement url="orig.flac" id="transcr_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
@@ -449,6 +456,6 @@
         <!-- <audioelement url="vienna.flac" id="transcr_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
         <audioelement url="magenta.flac" id="transcr_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
         <audioelement url="target.flac" id="transcr_n3-t" gain="0" type="outside-reference"/>
-        <survey location="post" showBackButton="true"/>
+        <survey location="post"/>
     </page>
 </waet>
