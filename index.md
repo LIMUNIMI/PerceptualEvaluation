@@ -89,6 +89,13 @@ The following videos contain two different <per>performances</per> of the same <
 
 <iframe width="40%" height="15%" src="https://www.youtube.com/embed/z2x_aHqyfqE" frameborder="0"></iframe>
 
+---
+
+By continuing, you consent to the use of the data collected in aggregate and anonymous form.
+
+The collected data may be used for scientific publications only in aggregate and anonymous form.
+
+It will not be possible to trace your identity and researchers who accidentally become aware of it are bound to the secrecy of the data.
 
 ---
 
@@ -133,22 +140,29 @@ Se pensi di non aver capito la differenza, prova a pensare così:
 * una <per>esecuzione</per> corrisponde a un specifico concerto
 * una <int>interpretazione</int> corrisponde a un particolare esecutore
 
-Ad esempio, Arturo Toscanini a diretto svariate volte la Nona di Beethoven con la NBC Orchestra, tentando di realizzare la medesima (o quasi) <int>interpretazione</int>, ma in ciascun concerto, l'<per>esecuzione</per> ha avuto qualche aspetto differente dovuto alla stanza, agli strumenti, al pubblico, etc.
+Ad esempio, Arturo Toscanini ha diretto svariate volte la Nona di Beethoven con la NBC Orchestra, tentando di realizzare la medesima (o quasi) <int>interpretazione</int>, ma in ciascun concerto, l'<per>esecuzione</per> ha avuto qualche aspetto differente dovuto alla stanza, agli strumenti, al pubblico, etc.
 
 ---
 
 I seguenti video contengono due <int>interpretazioni</int> dello stesso brano musicale (ascolta almeno 20-30 secondi di ciascun video):
 
-<iframe width="40%" height="20%" src="https://www.youtube.com/embed/k7hiNR4wxUs" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="40%" height="15%" src="https://www.youtube.com/embed/DnA68jnSaSQ" frameborder="0"></iframe>
 
-<iframe width="40%" height="20%" src="https://www.youtube.com/embed/i7w0OAA_KnQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="40%" height="15%" src="https://www.youtube.com/embed/i7w0OAA_KnQ" frameborder="0"></iframe>
 
 I seguenti video contengono due <per>esecuzioni</per> della stessa <int>interpretazione</int> (ascolta almeno 20-30 secondi di ciascun video):
 
-<iframe width="40%" height="20%" src="https://www.youtube.com/embed/i7w0OAA_KnQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="40%" height="15%" src="https://www.youtube.com/embed/i7w0OAA_KnQ" frameborder="0"></iframe>
 
-<iframe width="40%" height="20%" src="https://www.youtube.com/embed/HAkPWf5N5tQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="40%" height="15%" src="https://www.youtube.com/embed/z2x_aHqyfqE" frameborder="0"></iframe>
 
+---
+
+Proseguendo, acconsenti all'utilizzo dei dati raccolti in forma aggregata e anonima.
+
+I dati raccolti potranno essere usati per pubblicazioni scentifiche soltanto in forma aggregata e anonima.
+
+Non sarà possibile risalire alla tua identità e i ricercatori che ne dovessero averne accidentalmente conoscenza sono vincolati alla segretezza dei dati.
 
 ---
 
