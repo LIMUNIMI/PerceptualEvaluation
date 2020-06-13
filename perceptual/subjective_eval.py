@@ -3,6 +3,12 @@ import os
 import re
 import datetime
 import pandas as pd
+import plotly.express as px
+import scipy.stats
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import numpy as np
 import xml.etree.ElementTree as ET
 
 PATH = "/home/sapo/Develop/http/listening/saves"
@@ -175,17 +181,80 @@ def sqlite2pandas(path,
     return pd.read_sql(SQL, db)
 
 
-def plot(path, *args, **kwargs):
+def plot(path, variable=None, *args, **kwargs):
+    graphs = []
     db = xml2sqlite(path)
-    df = sqlite2pandas(path, db, *args, **kwargs)
+    df = sqlite2pandas(path, db, variable=variable, *args, **kwargs)
+    questions = df.question.unique()
+    excerpts = df.excerpt_num.unique()
+    for question in questions:
+        for excerpt in sorted(excerpts):
+            this = df.loc[df['question'] == question].loc[df['excerpt_num'] ==
+                                                          excerpt]
+            groupby = [variable, 'method']
+            if variable is None:
+                groupby = 'method'
+            data = this.groupby(groupby,
+                                as_index=True)['rating'].mean().to_frame()
+            data['std'] = this.groupby(groupby, as_index=True)['rating'].std()
+            data['count'] = this.groupby(groupby,
+                                         as_index=True)['rating'].count()
+            print("Data: ")
+            print(data)
+            data = data.reset_index()
+            fig_plot = px.line(
+                data,
+                x='method',
+                y='rating',
+                text='count',
+                title=f'question {question}, excerpt {excerpt}, variable {variable}',
+                error_y='std',
+                color=variable)
+            fig_plot.update_traces(textposition='top left')
+            # fig.show()
 
-    return df
+            # computing wilcoxon matrix
+            if variable:
+                variables = data[variable].unique()
+                pval = np.zeros((len(variables), len(variables)))
+                for i, expi in enumerate(variables):
+                    for j, expj in enumerate(variables):
+                        try:
+                            _, pval[i, j] = scipy.stats.wilcoxon(
+                                data.loc[data[variable] == expi]['rating'],
+                                data.loc[data[variable] == expj]['rating'])
+                        except Exception as e:
+                            print("\nError in Wilcoxon test!:")
+                            print(e)
+                            print()
+                fig_pval = px.imshow(
+                    pval,
+                    x=variables,
+                    y=variables,
+                    title=f'question {question}, excerpt {excerpt}, variable {variable}',
+                    range_color=[0, 0.05])
+                graphs.append(
+                    html.Div([
+                        html.Div([dcc.Graph(figure=fig_plot)],
+                                 className="eight columns"),
+                        html.Div([dcc.Graph(figure=fig_pval)],
+                                 className="four columns")
+                    ],
+                        className="row"))
+                # fig.show()
+                print(pval)
+
+            else:
+                graphs.append(dcc.Graph(figure=fig_plot))
+
+    return graphs
+
 
 if __name__ == "__main__":
-    db = xml2sqlite(PATH)
-    df = sqlite2pandas(PATH,
-                       db,
-                       'expertise',
-                       min_listen_time=0.5,
-                       cursor_moved=False)
-    __import__('ipdb').set_trace()
+    graphs = plot(PATH,
+                  variable='expertise',
+                  min_listen_time=0.5,
+                  cursor_moved=False)
+    app = dash.Dash()
+    app.layout = html.Div(graphs)
+    app.run_server(debug=False, use_reloader=False)

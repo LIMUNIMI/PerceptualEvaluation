@@ -17,6 +17,8 @@ magenta = "^1.3"
 fastdtw = "^0.3.4"
 psutil = "^5.7.0"
 mir_eval = "^0.5"
+plotly = "^4.8.1"
+dash = "^1.12.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"
