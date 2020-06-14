@@ -30,6 +30,11 @@ METHODS = {
 
 EXCERPTS = {'n0': 0, 'n1': 1, 'n2': 2, 'n3': 3, 'medoid': 4}
 
+SAVE_PATH = './figures'
+
+if not os.path.exists(SAVE_PATH):
+    os.mkdir(SAVE_PATH)
+
 
 def xml2sqlite(path):
     db = sqlite3.connect(':memory:')
@@ -159,93 +164,143 @@ def sqlite2pandas(path,
     SQL += '"question", "excerpt_num", "method", "rating"\
         FROM ANSWERS JOIN USERS ON user_id == USERS.id'
 
-    need_and = False
     need_where = True
-    if variable is not None:
+    if variable:
         SQL += f' WHERE "{variable}" IS NOT NULL'
-        need_and = True
         need_where = False
-    if cursor_moved is not None:
-        if need_and:
-            SQL += ' AND '
+    if cursor_moved:
         if need_where:
             SQL += ' WHERE '
+            need_where = False
+        else:
+            SQL += ' AND '
         SQL += f'"cursor_moved" IS {cursor_moved}'
     if min_listen_time is not None:
-        if need_and:
-            SQL += ' AND '
         if need_where:
             SQL += ' WHERE '
+            need_where = False
+        else:
+            SQL += ' AND '
         SQL += f'"listen_time" >= {min_listen_time}'
 
     return pd.read_sql(SQL, db)
 
 
-def plot(path, variable=None, *args, **kwargs):
+def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
+    """
+    Arguments
+    ---------
+
+    `path` : str
+        the path to the `saves` folder
+
+    `excerpt_mean` : bool
+        if True, plots the average over all the excerpts per each question type
+
+    `variable` : str or None
+        the variable to be observed: each valua of the variable will be a
+        different line and the Wilcoxon rank test will be computed for all the
+        combinations of the variable value
+
+    `*args, **kwargs` :
+        other arguments passed to `sqlite2pandas` :
+
+        `min_listen_time` : float or int or None
+            the minimum time that an audio should have been listened to for
+            being taking into account; if a user listened to an audio for less
+            than `min_listen_time`, his answer is discarded
+
+        `cursor_moved` : bool
+            if True, only answers where users moved the cursor are taken into
+            account
+
+    Returns
+    -------
+
+    `list[dash_core_components.Graph]` :
+        the list of graphs to be plotted in Dash
+    """
+    def _plot_data(selcted_data):
+        groupby = [variable, 'method']
+        if not variable:
+            groupby = 'method'
+        data = selected_data.groupby(
+            groupby, as_index=True)['rating'].mean().to_frame()
+        data['std'] = selected_data.groupby(groupby,
+                                            as_index=True)['rating'].std()
+        data['count'] = selected_data.groupby(groupby,
+                                              as_index=True)['rating'].count()
+        print("Data: ")
+        data = data.reset_index()
+        fig_plot = px.line(
+            data,
+            x='method',
+            y='rating',
+            text='count',
+            title=f'question {question}, excerpt {excerpt}, variable {variable}',
+            error_y='std',
+            color=variable)
+
+        fig_plot.update_traces(textposition='top left')
+        fig_plot.write_image(
+            os.path.join(SAVE_PATH,
+                         f'plot-{question}_{excerpt}_{variable}.svg'))
+
+        # computing wilcoxon matrix
+        if variable:
+            variables = data[variable].unique()
+            pval = np.zeros((len(variables), len(variables)))
+            for i, expi in enumerate(variables):
+                for j, expj in enumerate(variables):
+                    try:
+                        _, pval[i, j] = scipy.stats.wilcoxon(
+                            data.loc[data[variable] == expi]['rating'],
+                            data.loc[data[variable] == expj]['rating'])
+                    except Exception as e:
+                        print("\nError in Wilcoxon test!:")
+                        print(e)
+                        print()
+            fig_pval = px.imshow(
+                pval,
+                x=variables,
+                y=variables,
+                title=f'question {question}, excerpt {excerpt}, variable {variable}',
+                range_color=[0, 0.05])
+
+            fig_pval.write_image(
+                os.path.join(SAVE_PATH,
+                             f'pval-{question}_{excerpt}_{variable}.svg'))
+            return html.Div([
+                html.Div([dcc.Graph(figure=fig_plot)], className="col-md-8"),
+                html.Div([dcc.Graph(figure=fig_pval)], className="col-md-4")
+            ],
+                className="row")
+
+        else:
+            return dcc.Graph(figure=fig_plot)
+
     graphs = []
+    # loading data from xml to pandas
     db = xml2sqlite(path)
     df = sqlite2pandas(path, db, variable=variable, *args, **kwargs)
+
+    # taking the number of questions and excerpts
     questions = df.question.unique()
     excerpts = df.excerpt_num.unique()
+
+    # selecting data
     for question in questions:
-        for excerpt in sorted(excerpts):
-            this = df.loc[df['question'] == question].loc[df['excerpt_num'] ==
-                                                          excerpt]
-            groupby = [variable, 'method']
-            if variable is None:
-                groupby = 'method'
-            data = this.groupby(groupby,
-                                as_index=True)['rating'].mean().to_frame()
-            data['std'] = this.groupby(groupby, as_index=True)['rating'].std()
-            data['count'] = this.groupby(groupby,
-                                         as_index=True)['rating'].count()
-            print("Data: ")
-            print(data)
-            data = data.reset_index()
-            fig_plot = px.line(
-                data,
-                x='method',
-                y='rating',
-                text='count',
-                title=f'question {question}, excerpt {excerpt}, variable {variable}',
-                error_y='std',
-                color=variable)
-            fig_plot.update_traces(textposition='top left')
-            # fig.show()
-
-            # computing wilcoxon matrix
-            if variable:
-                variables = data[variable].unique()
-                pval = np.zeros((len(variables), len(variables)))
-                for i, expi in enumerate(variables):
-                    for j, expj in enumerate(variables):
-                        try:
-                            _, pval[i, j] = scipy.stats.wilcoxon(
-                                data.loc[data[variable] == expi]['rating'],
-                                data.loc[data[variable] == expj]['rating'])
-                        except Exception as e:
-                            print("\nError in Wilcoxon test!:")
-                            print(e)
-                            print()
-                fig_pval = px.imshow(
-                    pval,
-                    x=variables,
-                    y=variables,
-                    title=f'question {question}, excerpt {excerpt}, variable {variable}',
-                    range_color=[0, 0.05])
-                graphs.append(
-                    html.Div([
-                        html.Div([dcc.Graph(figure=fig_plot)],
-                                 className="eight columns"),
-                        html.Div([dcc.Graph(figure=fig_pval)],
-                                 className="four columns")
-                    ],
-                        className="row"))
-                # fig.show()
-                print(pval)
-
-            else:
-                graphs.append(dcc.Graph(figure=fig_plot))
+        if excerpts_mean:
+            excerpt = 'mean'
+            selected_data = df.loc[df['question'] == question]
+            # plotting means of the excerpts
+            graphs.append(_plot_data(selected_data))
+        else:
+            for excerpt in sorted(excerpts):
+                selected_data = df.loc[df['question'] == question].loc[
+                    df['excerpt_num'] == excerpt]
+                # plotting each excerpt
+                graphs.append(_plot_data(selected_data))
 
     return graphs
 
@@ -253,8 +308,17 @@ def plot(path, variable=None, *args, **kwargs):
 if __name__ == "__main__":
     graphs = plot(PATH,
                   variable='expertise',
+                  excerpts_mean=True,
                   min_listen_time=0.5,
                   cursor_moved=False)
-    app = dash.Dash()
+    # graphs = plot(PATH,
+    #               variable='expertise',
+    #               excerpts_mean=True,
+    #               min_listen_time=5,
+    #               cursor_moved=True)
+
+    app = dash.Dash(external_stylesheets=[
+        'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
+    ])
     app.layout = html.Div(graphs)
     app.run_server(debug=False, use_reloader=False)
