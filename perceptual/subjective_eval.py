@@ -10,6 +10,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import numpy as np
 import xml.etree.ElementTree as ET
+from tqdm import tqdm
 
 PATH = "/home/sapo/Develop/http/listening/saves"
 DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
@@ -42,10 +43,10 @@ def xml2sqlite(path):
     db_cursor.execute("""
 CREATE TABLE "USERS" (
     "id"    INTEGER,
-    "expertise" INTEGER,
-    "habits_classical"  INTEGER,
-    "habits_general"    INTEGER,
-    "headphones"    INTEGER,
+    "expertise" TEXT,
+    "habits_classical"  TEXT,
+    "habits_general"    TEXT,
+    "headphones"    TEXT,
     PRIMARY KEY("id")
 ); """)
 
@@ -62,6 +63,7 @@ CREATE TABLE "ANSWERS" (
     PRIMARY KEY("id")
 ); """)
 
+    print("Loading files")
     for root, dir, files in os.walk(path):
         for file in files:
             if file.endswith('.xml'):
@@ -81,7 +83,7 @@ CREATE TABLE "ANSWERS" (
                         second=int(time.get('secs')))
                     if execution_time < DISCARD_BEFORE_THAN:
                         print(
-                            f"Skipping one save because before than f{DISCARD_BEFORE_THAN}"
+                            f"Skipping one save because before than {DISCARD_BEFORE_THAN}"
                         )
                         continue
 
@@ -95,7 +97,7 @@ CREATE TABLE "ANSWERS" (
                     'headphones': 'NULL'
                 }
                 for variable in variables:
-                    value = int(variable.find('./response').get('name'))
+                    value = variable.find('./response').get('name')
                     name = variable.get('ref')
                     variables_dict[name] = value
 
@@ -155,7 +157,7 @@ def sqlite2pandas(path,
                   min_listen_time=5,
                   cursor_moved=True):
 
-    # beuilding SQL query
+    # building SQL query
     if variable is not None:
         SQL = f'SELECT "{variable}", '
     else:
@@ -183,6 +185,7 @@ def sqlite2pandas(path,
             SQL += ' AND '
         SQL += f'"listen_time" >= {min_listen_time}'
 
+    print("Extracting data")
     return pd.read_sql(SQL, db)
 
 
@@ -230,18 +233,18 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
                                             as_index=True)['rating'].std()
         data['count'] = selected_data.groupby(groupby,
                                               as_index=True)['rating'].count()
-        print("Data: ")
         data = data.reset_index()
-        fig_plot = px.line(
+        fig_plot = px.bar(
             data,
             x='method',
             y='rating',
+            color=variable,
+            barmode='group',
             text='count',
             title=f'question {question}, excerpt {excerpt}, variable {variable}',
-            error_y='std',
-            color=variable)
+            error_y='std')
 
-        fig_plot.update_traces(textposition='top left')
+        # fig_plot.update_traces(textposition='outside')
         fig_plot.write_image(
             os.path.join(SAVE_PATH,
                          f'plot-{question}_{excerpt}_{variable}.svg'))
@@ -252,20 +255,21 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
             pval = np.zeros((len(variables), len(variables)))
             for i, expi in enumerate(variables):
                 for j, expj in enumerate(variables):
-                    try:
-                        _, pval[i, j] = scipy.stats.wilcoxon(
-                            data.loc[data[variable] == expi]['rating'],
-                            data.loc[data[variable] == expj]['rating'])
-                    except Exception as e:
-                        print("\nError in Wilcoxon test!:")
-                        print(e)
-                        print()
+                    if i != j:
+                        try:
+                            _, pval[i, j] = scipy.stats.wilcoxon(
+                                data.loc[data[variable] == expi]['rating'],
+                                data.loc[data[variable] == expj]['rating'])
+                        except Exception as e:
+                            print("\nError in Wilcoxon test!:")
+                            print(e)
+                            print()
             fig_pval = px.imshow(
                 pval,
                 x=variables,
                 y=variables,
                 title=f'question {question}, excerpt {excerpt}, variable {variable}',
-                range_color=[0, 0.05])
+                range_color=[0, 0.5])
 
             fig_pval.write_image(
                 os.path.join(SAVE_PATH,
@@ -289,7 +293,8 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
     excerpts = df.excerpt_num.unique()
 
     # selecting data
-    for question in questions:
+    print("Plotting")
+    for question in tqdm(questions):
         if excerpts_mean:
             excerpt = 'mean'
             selected_data = df.loc[df['question'] == question]
@@ -306,10 +311,18 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
 
 
 if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 2:
+        print('tell me which variable to use')
+        sys.exit(1)
+    if len(sys.argv) > 2:
+        excerpt_mean = False
+    else:
+        excerpt_mean = True
     graphs = plot(PATH,
-                  variable='expertise',
-                  excerpts_mean=True,
-                  min_listen_time=0.5,
+                  variable=sys.argv[1],
+                  excerpts_mean=excerpt_mean,
+                  min_listen_time=5,
                   cursor_moved=False)
     # graphs = plot(PATH,
     #               variable='expertise',
