@@ -19,6 +19,7 @@ DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
                                         hour=12,
                                         minute=45,
                                         second=0)
+MAP_VALUES = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4}
 
 METHODS = {
     '0': 'hidden reference',
@@ -38,6 +39,33 @@ if not os.path.exists(SAVE_PATH):
 
 
 def xml2sqlite(path):
+    """
+    Parse an xml save from WAET and creates a sqlite database in RAM with two
+    tables:
+
+        CREATE TABLE "USERS" (
+            "id"    INTEGER,
+            "expertise" TEXT,
+            "habits_classical"  TEXT,
+            "habits_general"    TEXT,
+            "headphones"    TEXT,
+            PRIMARY KEY("id")
+        );
+        CREATE TABLE "ANSWERS" (
+            "id"	INTEGER,
+            "user_id"	INTEGER NOT NULL,
+            "listen_time"	REAL,
+            "cursor_moved"	BOOLEAN,
+            "question"	TEXT,
+            "excerpt_num"	INTEGER,
+            "method"	TEXT,
+            "rating"	REAL,
+            PRIMARY KEY("id")
+        );
+
+    It also maps variable values according to the `MAP_VALUES` dict
+
+    """
     db = sqlite3.connect(':memory:')
     db_cursor = db.cursor()
     db_cursor.execute("""
@@ -99,7 +127,7 @@ CREATE TABLE "ANSWERS" (
                 for variable in variables:
                     value = variable.find('./response').get('name')
                     name = variable.get('ref')
-                    variables_dict[name] = value
+                    variables_dict[name] = MAP_VALUES[value]
 
                 # inserting user
                 db_cursor.execute(f"""
@@ -151,11 +179,10 @@ VALUES (
     return db
 
 
-def sqlite2pandas(path,
-                  db,
-                  variable=None,
-                  min_listen_time=5,
-                  cursor_moved=True):
+def sqlite2pandas(db, variable=None, min_listen_time=5, cursor_moved=True):
+    """
+    Given an sqlite db, this does a query and returns the table in a dataframe
+    """
 
     # building SQL query
     if variable is not None:
@@ -189,6 +216,26 @@ def sqlite2pandas(path,
     return pd.read_sql(SQL, db)
 
 
+def count_users(db):
+    db_cursor = db.cursor()
+
+    print("\nCounting users for each variable:")
+    print("------------------------")
+    for variable in [
+            'expertise', 'headphones', 'habits_classical', 'habits_general'
+    ]:
+        tot = 0
+        for value in range(5):
+            SQL = f'SELECT COUNT(*) FROM USERS WHERE "{variable}" == {value}'
+            db_cursor.execute(SQL)
+            answer = db_cursor.fetchall()[0][0]
+            tot += int(answer)
+            print(f"{variable} {value}: {answer}")
+        print(f"Tot: {tot}")
+        print("------------------------")
+    print("\n")
+
+
 def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
     """
     Arguments
@@ -201,7 +248,7 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
         if True, plots the average over all the excerpts per each question type
 
     `variable` : str or None
-        the variable to be observed: each valua of the variable will be a
+        the variable to be observed: each value of the variable will be a
         different line and the Wilcoxon rank test will be computed for all the
         combinations of the variable value
 
@@ -252,7 +299,7 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
         # computing wilcoxon matrix
         if variable:
             variables = data[variable].unique()
-            pval = np.zeros((len(variables), len(variables)))
+            pval = np.ones((len(variables), len(variables)))
             for i, expi in enumerate(variables):
                 for j, expj in enumerate(variables):
                     if i != j:
@@ -286,7 +333,8 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
     graphs = []
     # loading data from xml to pandas
     db = xml2sqlite(path)
-    df = sqlite2pandas(path, db, variable=variable, *args, **kwargs)
+    count_users(db)
+    df = sqlite2pandas(db, variable=variable, *args, **kwargs)
 
     # taking the number of questions and excerpts
     questions = df.question.unique()
@@ -313,16 +361,30 @@ def plot(path, excerpts_mean=True, variable=None, *args, **kwargs):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
-        print('tell me which variable to use')
-        sys.exit(1)
+        print(f"""
+Syntax:
+
+{sys.argv[0]} [variable] [true|false]
+
+* `variable`: one of 'expertise', 'headphones', 'habits_classical', 'habits_general'. Default: 'expertise'
+
+* `true|false`: if true, the average over the excerpts are computed, if false, the results for each single excerpts are shown. Default: true
+
+""")
+        variable = 'expertise'
+    else:
+        variable = sys.argv[1]
     if len(sys.argv) > 2:
-        excerpt_mean = False
+        if sys.argv[2] == 'false':
+            excerpt_mean = False
+        else:
+            excerpt_mean = True
     else:
         excerpt_mean = True
     graphs = plot(PATH,
-                  variable=sys.argv[1],
+                  variable=variable,
                   excerpts_mean=excerpt_mean,
-                  min_listen_time=5,
+                  min_listen_time=1,
                   cursor_moved=False)
     # graphs = plot(PATH,
     #               variable='expertise',
