@@ -11,6 +11,18 @@ DATASET = "SMD"
 N_JOBS = 8
 EXCERPTS_DIR = "to_be_synthesized"
 
+EXCERPTS = {'n0': 0, 'n1': 1, 'n2': 2, 'n3': 3, 'medoid': 4}
+METHODS = {
+    # hr
+    'orig': 0,
+    # nr
+    'other': 1,
+    # si
+    'proposed': 3,
+    # o&f
+    'magenta': 2
+}
+
 
 def compare_midi(fname_targ, fname_pred, stdout=True):
     mp = mat2mir_eval(midipath2mat(fname_pred))
@@ -65,9 +77,12 @@ def mat2mir_eval(mat):
     return times, pitches, vel
 
 
-def excerpts_test(path):
+def excerpts_test(path=EXCERPTS_DIR, ordinal=False):
     # load all midi files in excerpts
     excerpts = {}
+    print("Hello bro, values are in this order:")
+    print("  [w/o velocity: ['Precision', 'Recall', 'Fmeasure']")
+    print("   w/ velocity:  ['Precision', 'Recall', 'Fmeasure']]")
     for root, dirs, files in os.walk(path):
         for file in files:
             name, ext = os.path.splitext(file)
@@ -84,24 +99,33 @@ def excerpts_test(path):
                 excerpts[n][t] = os.path.join(root, file)
 
     # compare midis with the one ending with type 'orig'
-    out = {}
+    out = np.zeros((len(excerpts.keys()), len(excerpts[n].keys()), 2, 3))
     for n in excerpts.keys():
         target = excerpts[n]['orig']
         for t in excerpts[n].keys():
-            if t == 'orig':
-                continue
             # store results based on name
-            if n not in out:
-                out[n] = {t: compare_midi(target, excerpts[n][t], stdout=False)}
-            else:
-                out[n][t] = compare_midi(target, excerpts[n][t], stdout=False)
+            out[EXCERPTS[n], METHODS[t]] = compare_midi(target,
+                                                        excerpts[n][t],
+                                                        stdout=False)
             print(f"name: {n}, type: {t}")
-            print(out[n][t])
+            print(out[EXCERPTS[n], METHODS[t]])
+
+    # change values if asked ordinal
+    if ordinal:
+        for excerpt in range(out.shape[0]):
+            for measure_i in range(out.shape[2]):
+                for measure_j in range(out.shape[3]):
+                    values = out[excerpt, :, measure_i, measure_j]
+                    order = np.argsort(values)
+                    values[order] = list(range(out.shape[1]))
 
     # saving results
-    if not os.path.exists('results'):
-        os.mkdir('results')
-    pickle.dump(out, open('results/transcription_' + EXCERPTS_DIR + '.pkl', 'wb'))
+    # if saving:
+    #     if not os.path.exists('results'):
+    #         os.mkdir('results')
+    #     pickle.dump(
+    #         out, open('results/transcription_' + EXCERPTS_DIR + '.pkl', 'wb'))
+    return out
 
 
 def dataset_test(dataset):
