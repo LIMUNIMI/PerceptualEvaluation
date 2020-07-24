@@ -11,6 +11,8 @@ from .plotting_tools import plot
 from .objective_eval import excerpts_test, EXCERPTS
 from . import utils, objective_eval, excerpt_search
 
+#################################
+# SETTINGS:
 PATH = "/home/sapo/Develop/http/listening/saves"
 DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
                                         month=6,
@@ -19,6 +21,8 @@ DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
                                         minute=45,
                                         second=0)
 MAP_VALUES = {'0': 0, '1': 0, '2': 1, '3': 1, '4': 1}
+
+#################################
 
 METHODS = {
     '0': 'hr',
@@ -318,17 +322,19 @@ if __name__ == "__main__":
         print(f"""
 Syntax:
 
-{sys.argv[0]} [variable] [average|ordinal|rescale]
+{sys.argv[0]} [variable] [average|ordinal|rescale|our_eval]
 
-* `variable`: one of 'expertise', 'headphones', 'habits_classical', 'habits_general'. Default: 'expertise'
+* `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general'. Default: 'expertise'
 
-* `average`: if used, the average over the excerpts are computed, otherwise, the results for each single excerpts are shown. Default: true
+* `average`: if used, all answers from all excerpts are used for each question type; this will results in one plot per question type instead of one plot per (question type, excerpt). Also not that the median and mean values are *averaged* over all the excerpts.
 
-* `ordinal` : if used, absolute ratings given by users are substituted with their their ordinal position (higher is more similar)
+* `ordinal` : if used, absolute ratings given by users are substituted with their ordinal position (higher is more similar); in this way the pearson coefficient should change, but the pearsman and kendall coefficients shouldn't.
 
-* `rescale` : if used, objective_evaluation is rescaled with `f(x) = 1 - 1**(-x)`
+* `rescale` : if used, objective_evaluation is rescaled with `f(x) = 1 - 10**(-x)`
+
+* `our_eval` : if used, objective evaluation metric is substituted by our metric (based on the linear regression of the median subjective metric)
 """)
-        variable = 'habits_classical'
+        sys.exit()
     else:
         variable = sys.argv[1]
 

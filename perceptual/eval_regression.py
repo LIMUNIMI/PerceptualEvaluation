@@ -73,7 +73,7 @@ def load_midi_scores(path=MIDI_PATH):
     return out - targets[:, np.newaxis, :]
 
 
-def main(variable):
+def main():
     print("Loading audio features")
     mfcc = 13
     audios = load_audio_excerpts(num_features=mfcc)
@@ -87,7 +87,7 @@ def main(variable):
 
     sub_eval = subjective_eval.sqlite2pandas(
         subjective_eval.xml2sqlite(SAVES_PATH),
-        variable=variable,
+        variable=None,
         min_listen_time=5,
         cursor_moved=True,
         ordinal=False)
@@ -178,5 +178,4 @@ def main(variable):
 
 
 if __name__ == "__main__":
-    import sys
-    main(sys.argv[1])
+    main()
