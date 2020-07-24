@@ -133,17 +133,15 @@ def create_excerpt(audio_path, time, name):
 
     # transcribe
     data = pickle.load(open(TEMPLATE_PATH, 'rb'))
-    transcription_0, _, _, _ = proposed.transcribe(
-        full_audio,
-        data,
-        score=score)
+    transcription_0, _, _, _ = proposed.transcribe(full_audio,
+                                                   data,
+                                                   score=score)
 
     transcription_1 = magenta_transcription.transcribe(full_audio, SR)
 
-    transcription_2, _, _, _ = proposed.transcribe(
-        full_audio,
-        data,
-        score=None)
+    transcription_2, _, _, _ = proposed.transcribe(full_audio,
+                                                   data,
+                                                   score=None)
 
     # chose another interpretation
     performance = '01'

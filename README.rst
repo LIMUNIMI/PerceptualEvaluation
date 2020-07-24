@@ -106,11 +106,19 @@ distribute the url to the root of WAET to your partecipants.
 .. _WAET: https://github.com/BrechtDeMan/WebAudioEvaluationTool
 .. _wiki: https://github.com/BrechtDeMan/WebAudioEvaluationTool/wiki/Pooling-tests
 
-Objective evaluation
---------------------
+
+Plotting tests
+--------------
+
+[TODO: improve explanation]
+
+To plot tests you should use ``perceptual.subjective_eval``, which also prints
+correlations with the objective measure from ``mir_eval``.
+
+For viewing weights and stats of linear regression use ``perceptual.regression_eval``.
 
 Alignment
-~~~~~~~~~
+---------
 
 #. Install fluidsynth and download SalamanderGrandPianoV3 soundfont in sf2 format
    from our mega_ folder and put it in your working dir
@@ -123,21 +131,6 @@ Alignment
    baseline alignment over SMD dataset
 #. run ``poetry run python -m perceptual.alignment.analysis results/ewert.csv
    results/amt.csv`` to plot the results of alignment
-
-Transcription
-~~~~~~~~~~~~~
-
-#. To run the objective evaluation use:
-
-   #. ``poetry run python -m perceptual.objective_eval SMD``
-   #. ``poetry run python -m perceptual.objective_eval to_be_synthesized``
-    
-#. To compare with subjective evaluation, put your perceptual test results in
-   ``results`` directory with name ``perceptual.csv`` and run ``poetry run
-   python -m perceptual.compare_eval``. This will create csv files in
-   ``results`` directory. [TODO]
-   
-#. To plot them use ``poetry run python -m perceptual.plots``. [TODO]
 
 
 Perceptual tests

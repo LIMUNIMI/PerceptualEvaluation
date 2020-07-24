@@ -28,7 +28,7 @@ def compare_midi(fname_targ, fname_pred, stdout=True):
     mp = mat2mir_eval(midipath2mat(fname_pred))
     mt = mat2mir_eval(midipath2mat(fname_targ))
 
-    res = evaluate(mp, mt)
+    res = evaluate(mt, mp)
     if stdout:
         print("Hello bro, values are in this order:")
         print("  [w/o velocity: ['Precision', 'Recall', 'Fmeasure']")
@@ -40,8 +40,10 @@ def compare_midi(fname_targ, fname_pred, stdout=True):
 
 
 def evaluate(targ, pred):
-    t1, p1, v1 = pred
-    t2, p2, v2 = targ
+    targ = mat2mir_eval(targ)
+    pred = mat2mir_eval(pred)
+    t1, p1, v1 = targ
+    t2, p2, v2 = pred
     # remove initial silence
     t1 -= np.min(t1)
     t2 -= np.min(t2)
@@ -77,7 +79,7 @@ def mat2mir_eval(mat):
     return times, pitches, vel
 
 
-def excerpts_test(path=EXCERPTS_DIR, ordinal=False):
+def excerpts_test(path=EXCERPTS_DIR, ordinal=False, evaluate=evaluate):
     # load all midi files in excerpts
     excerpts = {}
     print("Hello bro, values are in this order:")
@@ -102,11 +104,11 @@ def excerpts_test(path=EXCERPTS_DIR, ordinal=False):
     out = np.zeros((len(excerpts.keys()), len(excerpts[n].keys()), 2, 3))
     for n in excerpts.keys():
         target = excerpts[n]['orig']
+        target = midipath2mat(target)
         for t in excerpts[n].keys():
             # store results based on name
-            out[EXCERPTS[n], METHODS[t]] = compare_midi(target,
-                                                        excerpts[n][t],
-                                                        stdout=False)
+            exc = midipath2mat(excerpts[n][t])
+            out[EXCERPTS[n], METHODS[t]] = evaluate(target, exc)
             print(f"name: {n}, type: {t}")
             print(out[EXCERPTS[n], METHODS[t]])
 
@@ -118,13 +120,6 @@ def excerpts_test(path=EXCERPTS_DIR, ordinal=False):
                     values = out[excerpt, :, measure_i, measure_j]
                     order = np.argsort(values)
                     values[order] = list(range(out.shape[1]))
-
-    # saving results
-    # if saving:
-    #     if not os.path.exists('results'):
-    #         os.mkdir('results')
-    #     pickle.dump(
-    #         out, open('results/transcription_' + EXCERPTS_DIR + '.pkl', 'wb'))
     return out
 
 
@@ -165,10 +160,6 @@ def process(i, dataset):
     # evaluating
     gt = dataset.get_score(i,
                            score_type=['precise_alignment', 'broad_alignment'])
-    transcription_0 = mat2mir_eval(transcription_0)
-    transcription_1 = mat2mir_eval(transcription_1)
-    transcription_2 = mat2mir_eval(transcription_2)
-    gt = mat2mir_eval(gt)
 
     res0 = evaluate(gt, transcription_0)
     res1 = evaluate(gt, transcription_1)

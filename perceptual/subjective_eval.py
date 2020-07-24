@@ -8,7 +8,8 @@ import dash_html_components as html
 import numpy as np
 import xml.etree.ElementTree as ET
 from .plotting_tools import plot
-from .objective_eval import excerpts_test
+from .objective_eval import excerpts_test, EXCERPTS
+from . import utils, objective_eval, excerpt_search
 
 PATH = "/home/sapo/Develop/http/listening/saves"
 DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
@@ -18,8 +19,6 @@ DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
                                         minute=45,
                                         second=0)
 MAP_VALUES = {'0': 0, '1': 0, '2': 1, '3': 1, '4': 1}
-
-EXCERPTS = {'n0': 0, 'n1': 1, 'n2': 2, 'n3': 3, 'medoid': 4}
 
 METHODS = {
     '0': 'hr',
@@ -34,6 +33,65 @@ SAVE_PATH = './figures'
 
 if not os.path.exists(SAVE_PATH):
     os.mkdir(SAVE_PATH)
+
+
+def symbolic_bpms(mat):
+
+    pr = utils.make_pianoroll(mat,
+                              res=0.01,
+                              only_onsets=True,
+                              velocities=False)
+    windows = []
+    for win_len in [10, 100, 1000]:
+        # [10, 100, 1000]:
+        end = win_len * (pr.shape[1] // win_len)
+        windows.append(np.sum(pr[:, :end].reshape((128, -1, win_len)),
+                              axis=-1))
+
+    bpms = []
+    for wins in windows:
+        bpms.append(np.mean(wins))
+        bpms.append(np.std(wins))
+
+    return bpms
+
+
+def evaluate(target,
+             pred,
+             selected_features=[2, 3, 5, 8, 14, 16],
+             weights=[
+                 -0.12761017, 0.18911224, -0.25754799, 0.1944784, 0.16746493,
+                 0.11068928
+             ],
+             intercept=0.48608333333333303,
+             scale=[
+                 21.26085766, 3.68085939, 0.4544361, 87.27898769, 0.13714443,
+                 0.40832722
+             ],
+             mean=[
+                 60.47109384, 10.68730149, 1.55257842, 132.76913813, 0.490625,
+                 0.34468598
+             ]):
+    midi = utils.make_pianoroll(pred, res=0.005)
+    features1 = excerpt_search.score_features(midi)
+    features1 += symbolic_bpms(pred)
+    midi = utils.make_pianoroll(target, res=0.005)
+    features2 = excerpt_search.score_features(midi)
+    features2 += symbolic_bpms(target)
+
+    fmeasure = objective_eval.evaluate(target, pred)[1][2]
+
+    features = np.array(features1) - np.array(features2)
+    features = np.concatenate([features, [fmeasure]])[selected_features]
+
+    # standardizing:
+    features = (features - np.array(mean)) / np.array(scale)
+
+    out = 0
+    for i, feat in enumerate(features):
+        out += feat * weights[i]
+
+    return out + intercept
 
 
 def xml2sqlite(path):
@@ -270,7 +328,7 @@ Syntax:
 
 * `rescale` : if used, objective_evaluation is rescaled with `f(x) = 1 - 1**(-x)`
 """)
-        variable = 'expertise'
+        variable = 'habits_classical'
     else:
         variable = sys.argv[1]
 
@@ -285,10 +343,14 @@ Syntax:
     count_users(db)
     df = sqlite2pandas(db,
                        variable=variable,
-                       min_listen_time=1,
-                       cursor_moved=False,
+                       min_listen_time=5,
+                       cursor_moved=True,
                        ordinal=ordinal)
-    obj_eval = excerpts_test(ordinal=ordinal)
+    if 'our_eval' in sys.argv:
+        obj_eval = excerpts_test(ordinal=ordinal, evaluate=evaluate)
+    else:
+        obj_eval = excerpts_test(ordinal=ordinal)
+
     if rescale:
         obj_eval = 1 - 10**(-obj_eval)
 
