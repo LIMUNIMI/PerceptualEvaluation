@@ -40,6 +40,10 @@ def compare_midi(fname_targ, fname_pred, stdout=True):
 
 
 def evaluate(targ, pred):
+    if type(targ) is str:
+        targ = midipath2mat(targ)
+    if type(pred) is str:
+        pred = midipath2mat(pred)
     targ = mat2mir_eval(targ)
     pred = mat2mir_eval(pred)
     t1, p1, v1 = targ
@@ -104,10 +108,9 @@ def excerpts_test(path=EXCERPTS_DIR, ordinal=False, evaluate=evaluate):
     out = np.zeros((len(excerpts.keys()), len(excerpts[n].keys()), 2, 3))
     for n in excerpts.keys():
         target = excerpts[n]['orig']
-        target = midipath2mat(target)
         for t in excerpts[n].keys():
             # store results based on name
-            exc = midipath2mat(excerpts[n][t])
+            exc = excerpts[n][t]
             out[EXCERPTS[n], METHODS[t]] = evaluate(target, exc)
             print(f"name: {n}, type: {t}")
             print(out[EXCERPTS[n], METHODS[t]])

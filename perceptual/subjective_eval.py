@@ -10,6 +10,9 @@ import xml.etree.ElementTree as ET
 from .plotting_tools import plot
 from .objective_eval import excerpts_test, EXCERPTS
 from . import utils, objective_eval, excerpt_search
+import sys
+sys.path.append(os.path.realpath("./perceptual/PEAMT/"))
+from .PEAMT.peamt import PEAMT
 
 #################################
 # SETTINGS:
@@ -76,6 +79,10 @@ def evaluate(target,
                  60.47109384, 10.68730149, 1.55257842, 132.76913813, 0.490625,
                  0.34468598
              ]):
+    if type(target) is str:
+        target = utils.midipath2mat(target)
+    if type(pred) is str:
+        pred = utils.midipath2mat(pred)
     midi = utils.make_pianoroll(pred, res=0.005)
     features1 = excerpt_search.score_features(midi)
     features1 += symbolic_bpms(pred)
@@ -354,6 +361,16 @@ Syntax:
                        ordinal=ordinal)
     if 'our_eval' in sys.argv:
         obj_eval = excerpts_test(ordinal=ordinal, evaluate=evaluate)
+    elif 'peamt' in sys.argv:
+        # there's a subtle incompatibility in PEAMT:
+        import pickle
+        old_pickle_load = pickle.load
+        def new_pickle_load(x): return old_pickle_load(x, encoding='latin1')
+        pickle.load = new_pickle_load
+        peamt = PEAMT(
+            parameters='./perceptual/PEAMT/model_parameters/PEAMT.pkl')
+        obj_eval = excerpts_test(ordinal=ordinal,
+                                 evaluate=peamt.evaluate_from_midi)
     else:
         obj_eval = excerpts_test(ordinal=ordinal)
 
