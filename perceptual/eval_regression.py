@@ -3,6 +3,7 @@ import essentia.standard as esst
 import numpy as np
 import plotly.express as px
 from sklearn.linear_model import ElasticNetCV, LinearRegression, RidgeCV, LassoCV, BayesianRidge, ARDRegression, LassoLarsCV
+from sklearn.model_selection import LeaveOneOut
 from scipy.stats import pearsonr, spearmanr
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
@@ -73,6 +74,15 @@ def load_midi_scores(path=MIDI_PATH):
     return out - targets[:, np.newaxis, :]
 
 
+def leave_one_out(x, y, model):
+    predictions = []
+    for train_idx, test_idx in LeaveOneOut().split(x):
+        model.fit(copy(x[train_idx]), y[train_idx])
+        predictions.append(model.predict(x[test_idx]))
+
+    return np.array(predictions)[:, 0]
+
+
 def main():
     print("Loading audio features")
     mfcc = 13
@@ -96,9 +106,15 @@ def main():
 
     obj_eval = objective_eval.excerpts_test(ordinal=False)[..., 1, 2]
     obj_eval = np.broadcast_to(obj_eval[np.newaxis, :, :, np.newaxis],
-                               (*old_shape[:-1], 1)).reshape(-1, 1)
+                               (*old_shape[:-1], 1)).reshape(-1)
 
-    samples = np.concatenate([samples, obj_eval], axis=-1)
+    peamt = subjective_eval.get_peamt()
+    peamt_eval = objective_eval.excerpts_test(
+        ordinal=False, evaluate=peamt.evaluate_from_midi)[..., 1, 2]
+    peamt_eval = np.broadcast_to(peamt_eval[np.newaxis, :, :, np.newaxis],
+                                 (*old_shape[:-1], 1)).reshape(-1)
+
+    samples = np.concatenate([samples, obj_eval[:, None]], axis=-1)
     scaler = StandardScaler().fit(samples)
     samples = scaler.transform(samples)
 
@@ -112,33 +128,24 @@ def main():
             # task = tasks[sort, i]
             # samples = samples[sort]
             model = eval(model_type)()
-            model.max_iter = 1e5
+            model.max_iter = 1e7
             if i == 1:
                 # discarding audio
-                model.fit(copy(samples[:, mfcc:]), sub_eval)
-                predictions.append(model.predict(samples[:, mfcc:]))
+                predictions.append(
+                    leave_one_out(samples[:, mfcc:], sub_eval, model))
             else:
-                model.fit(copy(samples), sub_eval)
-                predictions.append(model.predict(samples))
+                predictions.append(leave_one_out(samples, sub_eval, model))
             l1_err = np.mean(np.abs(predictions[i] - sub_eval))
             print(f"Mean error for {model_type}, task {i}: {l1_err:.2f}")
 
-        # to_be_plotted = np.concatenate([
-        #     sub_eval[:, np.newaxis], obj_eval,
-        #     np.stack(predictions, axis=-1)
-        # ],
-        #     axis=-1)
-        # fig = px.line(to_be_plotted, title=model_type)
-        # fig['data'][0]['name'] = 'subj'
-        # fig['data'][1]['name'] = 'obj'
-        # fig['data'][2]['name'] = 'w/ audio^'
-        # fig['data'][3]['name'] = 'w/o audio^'
-        # fig.show()
-
+    ###############################################
+    # Plotting coefficients:
+    # fitting using audio features
     model = ElasticNetCV(max_iter=1e5)
     model.fit(copy(samples), sub_eval)
     px.bar(y=model.coef_, title="audio").show()
 
+    # fitting without audio features
     model = ElasticNetCV(max_iter=1e5)
     model.fit(copy(samples[:, mfcc:]), sub_eval)
     px.bar(y=model.coef_, title="noaudio").show()
@@ -146,14 +153,29 @@ def main():
         mfcc + i for i in range(len(model.coef_)) if abs(model.coef_[i]) > 0.1
     ]
 
+    # fitting with the selected features only
     model = ElasticNetCV(max_iter=1e5)
     model.fit(copy(samples[:, features]), sub_eval)
-    predictions = model.predict(samples[:, features])
-    l1_err = np.mean(np.abs(predictions - sub_eval))
-    print(f"Average error with selected features: {l1_err:.2f}")
+    print(f"weights: {model.coef_}")
+    print(f"intercept: {model.intercept_}")
+    print(f"symbolic features: {[i - mfcc for i in features]}")
+    print(f"scale: {scaler.scale_[features]}")
+    print(f"mean: {scaler.mean_[features]}")
+
+    #################################################
+    # Comparison:
+    # leave one out for comparison
+    model = ElasticNetCV(max_iter=1e5)
+    predictions = leave_one_out(copy(samples[:, features]), sub_eval, model)
+    new_l1_err = np.mean(np.abs(predictions - sub_eval))
+    obj_l1_err = np.mean(np.abs(obj_eval - sub_eval))
+    peamt_l1_err = np.mean(np.abs(peamt_eval - sub_eval))
+    print(f"Average error with selected features (new): {new_l1_err:.2f}")
+    print(f"Average error with selected features (obj): {obj_l1_err:.2f}")
+    print(f"Average error with selected features (peamt): {peamt_l1_err:.2f}")
     px.bar(y=model.coef_, title="noaudio").show()
 
-    obj_eval = obj_eval[:, 0]
+    # correlation coeffients
     prev_correls = [
         pearsonr(sub_eval, obj_eval),
         spearmanr(sub_eval, obj_eval)
@@ -162,6 +184,10 @@ def main():
         pearsonr(sub_eval, predictions),
         spearmanr(sub_eval, predictions)
     ]
+    peamt_correls = [
+        pearsonr(sub_eval, peamt_eval),
+        spearmanr(sub_eval, peamt_eval)
+    ]
 
     print(
         f"Prev correlations: (pearson, spearman) {prev_correls[0][0]:.2f} {prev_correls[1][0]:.2f}"
@@ -169,12 +195,9 @@ def main():
     print(
         f"New correlations: (pearson, spearman) {new_correls[0][0]:.2f} {new_correls[1][0]:.2f}"
     )
-
-    print(f"weights: {model.coef_}")
-    print(f"intercept: {model.intercept_}")
-    print(f"symbolic features: {[i - mfcc for i in features]}")
-    print(f"scale: {scaler.scale_[features]}")
-    print(f"mean: {scaler.mean_[features]}")
+    print(
+        f"Peamt correlations: (pearson, spearman) {peamt_correls[0][0]:.2f} {peamt_correls[1][0]:.2f}"
+    )
 
 
 if __name__ == "__main__":

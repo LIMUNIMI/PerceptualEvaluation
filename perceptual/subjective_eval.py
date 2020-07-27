@@ -10,9 +10,6 @@ import xml.etree.ElementTree as ET
 from .plotting_tools import plot
 from .objective_eval import excerpts_test, EXCERPTS
 from . import utils, objective_eval, excerpt_search
-import sys
-sys.path.append(os.path.realpath("./perceptual/PEAMT/"))
-from .PEAMT.peamt import PEAMT
 
 #################################
 # SETTINGS:
@@ -40,6 +37,23 @@ SAVE_PATH = './figures'
 
 if not os.path.exists(SAVE_PATH):
     os.mkdir(SAVE_PATH)
+
+
+def get_peamt():
+    import sys
+    root = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.realpath(os.path.join(root, "PEAMT/")))
+    from .PEAMT.peamt import PEAMT
+    # there's a subtle incompatibility in PEAMT:
+    import pickle
+    old_pickle_load = pickle.load
+
+    def new_pickle_load(x):
+        return old_pickle_load(x, encoding='latin1')
+
+    pickle.load = new_pickle_load
+    return PEAMT(
+        parameters=os.path.join(root, 'PEAMT/model_parameters/PEAMT.pkl'))
 
 
 def symbolic_bpms(mat):
@@ -362,13 +376,7 @@ Syntax:
     if 'our_eval' in sys.argv:
         obj_eval = excerpts_test(ordinal=ordinal, evaluate=evaluate)
     elif 'peamt' in sys.argv:
-        # there's a subtle incompatibility in PEAMT:
-        import pickle
-        old_pickle_load = pickle.load
-        def new_pickle_load(x): return old_pickle_load(x, encoding='latin1')
-        pickle.load = new_pickle_load
-        peamt = PEAMT(
-            parameters='./perceptual/PEAMT/model_parameters/PEAMT.pkl')
+        peamt = get_peamt()
         obj_eval = excerpts_test(ordinal=ordinal,
                                  evaluate=peamt.evaluate_from_midi)
     else:
