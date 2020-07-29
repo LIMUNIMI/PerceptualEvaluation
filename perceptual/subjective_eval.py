@@ -7,6 +7,7 @@ import dash
 import dash_html_components as html
 import numpy as np
 import xml.etree.ElementTree as ET
+import pickle
 from .plotting_tools import plot
 from .objective_eval import excerpts_test, EXCERPTS
 from . import utils, objective_eval, excerpt_search
@@ -48,8 +49,8 @@ def get_peamt():
     import pickle
     old_pickle_load = pickle.load
 
-    def new_pickle_load(x):
-        return old_pickle_load(x, encoding='latin1')
+    def new_pickle_load(x, encoding='latin1'):
+        return old_pickle_load(x, encoding=encoding)
 
     pickle.load = new_pickle_load
     return PEAMT(
@@ -65,34 +66,29 @@ def symbolic_bpms(mat):
     windows = []
     for win_len in [10, 100, 1000]:
         # [10, 100, 1000]:
+        if win_len > pr.shape[1]:
+            win_len = pr.shape[1]
         end = win_len * (pr.shape[1] // win_len)
         windows.append(np.sum(pr[:, :end].reshape((128, -1, win_len)),
                               axis=-1))
 
     bpms = []
     for wins in windows:
-        bpms.append(np.mean(wins))
-        bpms.append(np.std(wins))
+        if np.any(wins):
+            bpms.append(np.mean(wins))
+            bpms.append(np.std(wins))
+        else:
+            bpms.append(0)
+            bpms.append(0)
 
     return bpms
 
 
 def evaluate(target,
-             pred,
-             selected_features=[2, 3, 5, 8, 14, 16],
-             weights=[
-                 -0.12761017, 0.18911224, -0.25754799, 0.1944784, 0.16746493,
-                 0.11068928
-             ],
-             intercept=0.48608333333333303,
-             scale=[
-                 21.26085766, 3.68085939, 0.4544361, 87.27898769, 0.13714443,
-                 0.40832722
-             ],
-             mean=[
-                 60.47109384, 10.68730149, 1.55257842, 132.76913813, 0.490625,
-                 0.34468598
-             ]):
+             pred):
+
+    scaler = pickle.load(open('scaler.pkl', 'rb'))
+    model = pickle.load(open('metric.pkl', 'rb'))
     if type(target) is str:
         target = utils.midipath2mat(target)
     if type(pred) is str:
@@ -100,23 +96,18 @@ def evaluate(target,
     midi = utils.make_pianoroll(pred, res=0.005)
     features1 = excerpt_search.score_features(midi)
     features1 += symbolic_bpms(pred)
+    features1 = scaler.transform(np.array(features1).reshape(1, -1))[0]
     midi = utils.make_pianoroll(target, res=0.005)
     features2 = excerpt_search.score_features(midi)
     features2 += symbolic_bpms(target)
+    features2 = scaler.transform(np.array(features2).reshape(1, -1))[0]
 
     fmeasure = objective_eval.evaluate(target, pred)[1][2]
 
-    features = np.array(features1) - np.array(features2)
-    features = np.concatenate([features, [fmeasure]])[selected_features]
+    features = features1 - features2
+    features = np.concatenate([features, [fmeasure]])[model.selected_features]
 
-    # standardizing:
-    features = (features - np.array(mean)) / np.array(scale)
-
-    out = 0
-    for i, feat in enumerate(features):
-        out += feat * weights[i]
-
-    return out + intercept
+    return model.predict(features[None])
 
 
 def xml2sqlite(path):
@@ -343,7 +334,7 @@ if __name__ == "__main__":
         print(f"""
 Syntax:
 
-{sys.argv[0]} [variable] [average|ordinal|rescale|our_eval]
+{sys.argv[0]} [variable] [average] [ordinal] [rescale] [our_eval|peamt]
 
 * `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general'. Default: 'expertise'
 
@@ -354,6 +345,8 @@ Syntax:
 * `rescale` : if used, objective_evaluation is rescaled with `f(x) = 1 - 10**(-x)`
 
 * `our_eval` : if used, objective evaluation metric is substituted by our metric (based on the linear regression of the median subjective metric)
+
+* `peamt` : if used, objective evaluation metric is substituted by peamt metric (another subjective metric)
 """)
         sys.exit()
     else:

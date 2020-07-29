@@ -299,14 +299,17 @@ def score_features(score_win):
             pitches = pixels[0][np.where(pixels[1] == i)[0]]
             pitches.sort()
             interv += (pitches[1:] - pitches[0]).tolist()
-
-    avg_interv = np.mean(interv)
-    std_interv = np.std(interv)
+    if len(interv) > 0:
+        avg_interv = np.mean(interv)
+        std_interv = np.std(interv)
+    else:
+        avg_interv, std_interv = 0, 0
 
     score_win[pixels] = 1
     A_ext = np.diff(np.hstack(([[0]] * 128, score_win, [[0]] * 128)))
     # Find interval of non-zeros lengths
     duration_win = np.where(A_ext == -1)[1] - np.where(A_ext == 1)[1]
+
     avg_dur = np.mean(duration_win)
     std_dur = np.std(duration_win)
 

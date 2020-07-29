@@ -8,6 +8,8 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from copy import copy
+from asmd.audioscoredataset import Dataset
+import random
 from . import excerpt_search
 from . import objective_eval
 from . import subjective_eval
@@ -20,9 +22,45 @@ SAVES_PATH = subjective_eval.PATH
 SR = 22050
 
 
-def _fill_out_targets(out, targets, features, splits):
-    if splits[2] == 'target':
+def scaler_process(i, dataset):
+    mat = dataset.get_score(
+        i, score_type=['precise_alignment', 'broad_alignment'])
+    dur = int(np.max(mat[:, 2]))
+    out = []
+    win_len = random.choice([5, 10, 20, 40, 60])
+    for i in range(dur // win_len):
+        win = mat[np.logical_and(mat[:, 1] >= i * win_len, mat[:, 2] <
+                                 (i + 1) * win_len)]
+        if len(win) == 0:
+            continue
+        pr = utils.make_pianoroll(win, res=0.005)
+        features = excerpt_search.score_features(pr)
+        features += subjective_eval.symbolic_bpms(win)
+        out.append(features)
+    return out
+
+
+def train_scaler():
+    dataset = Dataset().filter(instruments=['piano'], ensemble=False)
+
+    print("Training scaler...")
+    out = dataset.parallel(scaler_process, n_jobs=-2)
+    out = np.array([win for song in out for win in song])
+    scaler = StandardScaler()
+    return scaler.fit(out)
+
+
+def _fill_out_targets(out,
+                      targets,
+                      features,
+                      splits,
+                      target_split,
+                      both=False):
+    if splits[2] == target_split:
         targets[objective_eval.EXCERPTS[splits[1]]] = features
+        if both:
+            out[objective_eval.EXCERPTS[splits[1]]][objective_eval.METHODS[
+                splits[2]]] = features
     elif splits[2] not in objective_eval.METHODS:
         return
     else:
@@ -52,7 +90,7 @@ def load_audio_excerpts(path=AUDIO_PATH, num_features=9):
             splits = file.replace('.flac', '').split('_')
             question = int(splits[0][1])
             _fill_out_targets(out[question], targets[question], features[1:],
-                              splits)
+                              splits, 'target')
     return out - targets[..., np.newaxis, :]
 
 
@@ -70,8 +108,8 @@ def load_midi_scores(path=MIDI_PATH):
             # features = features[2:6] + symbolic_bpms(mat)
             features += subjective_eval.symbolic_bpms(mat)
             splits = file.replace('.mid', '').split('_')
-            _fill_out_targets(out, targets, features, splits)
-    return out - targets[:, np.newaxis, :]
+            _fill_out_targets(out, targets, features, splits, 'orig', True)
+    return out, targets[:, np.newaxis, :]
 
 
 def leave_one_out(x, y, model):
@@ -84,12 +122,30 @@ def leave_one_out(x, y, model):
 
 
 def main():
+    import pickle
+    if not os.path.exists('scaler.pkl'):
+        scaler = train_scaler()
+        pickle.dump(scaler, open('scaler.pkl', 'wb'))
+    else:
+        scaler = pickle.load(open('scaler.pkl', 'rb'))
+
     print("Loading audio features")
     mfcc = 13
     audios = load_audio_excerpts(num_features=mfcc)
+    old_shape = audios.shape
+    audios = StandardScaler().fit_transform(
+        audios.reshape(-1, audios.shape[-1])).reshape(old_shape)
 
     print("Loading symbolic features")
-    midis = load_midi_scores()[np.newaxis]
+    midis = [i for i in load_midi_scores()]
+    old_shape = midis[0].shape
+    midis[0] = scaler.transform(midis[0].reshape(-1, old_shape[-1])).reshape(
+        1, *old_shape)
+    old_shape = midis[1].shape
+    midis[1] = scaler.transform(midis[1].reshape(-1,
+                                                 midis[1].shape[-1])).reshape(
+                                                     1, *old_shape)
+    midis = midis[1] - midis[0]
     midis = np.broadcast_to(midis, (*audios.shape[:-1], midis.shape[-1]))
     samples = np.concatenate([audios, midis], axis=-1)
     old_shape = samples.shape
@@ -115,58 +171,59 @@ def main():
                                  (*old_shape[:-1], 1)).reshape(-1)
 
     samples = np.concatenate([samples, obj_eval[:, None]], axis=-1)
-    scaler = StandardScaler().fit(samples)
-    samples = scaler.transform(samples)
 
-    for model_type in [
-            'BayesianRidge', 'ARDRegression', 'LassoLarsCV', 'ElasticNetCV',
-            'LassoCV', 'RidgeCV', 'LinearRegression'
-    ]:
-        predictions = []
-        for i in range(2):
-            # sort = np.argsort(tasks[:, i])
-            # task = tasks[sort, i]
-            # samples = samples[sort]
-            model = eval(model_type)()
-            model.max_iter = 1e7
-            if i == 1:
-                # discarding audio
-                predictions.append(
-                    leave_one_out(samples[:, mfcc:], sub_eval, model))
-            else:
-                predictions.append(leave_one_out(samples, sub_eval, model))
-            l1_err = np.mean(np.abs(predictions[i] - sub_eval))
-            print(f"Mean error for {model_type}, task {i}: {l1_err:.2f}")
+    # for model_type in [
+    #         'BayesianRidge', 'ARDRegression', 'LassoLarsCV', 'ElasticNetCV',
+    #         'LassoCV', 'RidgeCV', 'LinearRegression'
+    # ]:
+    #     predictions = []
+    #     for i in range(2):
+    #         # sort = np.argsort(tasks[:, i])
+    #         # task = tasks[sort, i]
+    #         # samples = samples[sort]
+    #         model = eval(model_type)()
+    #         model.max_iter = 1e7
+    #         if i == 1:
+    #             # discarding audio
+    #             predictions.append(
+    #                 leave_one_out(samples[:, mfcc:], sub_eval, model))
+    #         else:
+    #             predictions.append(leave_one_out(samples, sub_eval, model))
+    #         l1_err = np.mean(np.abs(predictions[i] - sub_eval))
+    #         print(f"Mean error for {model_type}, task {i}: {l1_err:.2f}")
 
     ###############################################
     # Plotting coefficients:
     # fitting using audio features
-    model = ElasticNetCV(max_iter=1e5)
+    model = ElasticNetCV(max_iter=1e7)
     model.fit(copy(samples), sub_eval)
     px.bar(y=model.coef_, title="audio").show()
 
     # fitting without audio features
-    model = ElasticNetCV(max_iter=1e5)
+    model = ElasticNetCV(max_iter=1e7)
     model.fit(copy(samples[:, mfcc:]), sub_eval)
     px.bar(y=model.coef_, title="noaudio").show()
-    features = [
-        mfcc + i for i in range(len(model.coef_)) if abs(model.coef_[i]) > 0.1
-    ]
+    features = np.array(
+        [i for i in range(len(model.coef_)) if abs(model.coef_[i]) > 0.1])
 
     # fitting with the selected features only
-    model = ElasticNetCV(max_iter=1e5)
-    model.fit(copy(samples[:, features]), sub_eval)
+    model = ElasticNetCV(max_iter=1e7)
+    model.fit(copy(samples[:, mfcc + features]), sub_eval)
     print(f"weights: {model.coef_}")
     print(f"intercept: {model.intercept_}")
-    print(f"symbolic features: {[i - mfcc for i in features]}")
-    print(f"scale: {scaler.scale_[features]}")
-    print(f"mean: {scaler.mean_[features]}")
+    print(f"symbolic features: {features}")
+    scaled_features = features[features < scaler.scale_.shape[0]]
+    print(f"scale: {scaler.scale_[scaled_features]}")
+    print(f"mean: {scaler.mean_[scaled_features]}")
+    model.selected_features = features
+    pickle.dump(model, open('metric.pkl', 'wb'))
 
     #################################################
     # Comparison:
     # leave one out for comparison
-    model = ElasticNetCV(max_iter=1e5)
-    predictions = leave_one_out(copy(samples[:, features]), sub_eval, model)
+    model = ElasticNetCV(max_iter=1e7)
+    predictions = leave_one_out(copy(samples[:, mfcc + features]), sub_eval,
+                                model)
     new_l1_err = np.mean(np.abs(predictions - sub_eval))
     obj_l1_err = np.mean(np.abs(obj_eval - sub_eval))
     peamt_l1_err = np.mean(np.abs(peamt_eval - sub_eval))

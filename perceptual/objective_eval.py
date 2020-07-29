@@ -6,6 +6,8 @@ import pickle
 from . import proposed, magenta_transcription
 from .make_template import TEMPLATE_PATH, SR
 import os
+import warnings
+warnings.simplefilter('ignore', FutureWarning)
 
 DATASET = "SMD"
 N_JOBS = 8
