@@ -15,12 +15,24 @@ def load_pmt_data():
     df = pandas.read_csv(ANSWER_PATH, sep=';')
 
     # selecting difficulty 1 or 2
+    def check_pooled_std():
+        for i in range(1, 5):
+            A = df.loc[(df['difficulty'] == i)]
+            print(f"pooled std for difficulty {i}: {std_pooled(A):.4f}")
+    print("Before than filtering...")
+    check_pooled_std()
+
     df = df.loc[(df['difficulty'] == 1) | (df['difficulty'] == 2)]
 
     # taking only questions with more than 4 answer
     df = df.loc[
         df.groupby('question_id')['question_id'].transform('size') >= 4]
 
+    # counts = df.groupby('user_id')['answer'].count()
+    # count = counts.loc[counts < 10]
+    # df = df.loc[df['user_id'].isin(count.index)]
+    # print("After filtering...")
+    # check_pooled_std()
     return df
 
 
@@ -50,10 +62,29 @@ def evaluate_measure(df,
     print("Evaluating...")
     examples = df['example'].unique()
     ret = Parallel(n_jobs=-2)(delayed(process)(df, example)
-                             for example in tqdm(examples))
+                              for example in tqdm(examples))
 
     # returning the average
     return np.sum(ret) / df.shape[0]
+
+
+def std_pooled(df):
+    counts = df.groupby('question_id')['answer'].count()
+    stds = df.groupby('question_id')['answer'].std()
+    std_pooled = np.sqrt(np.sum((counts - 1) * (stds**2)) / np.sum(counts - 1))
+    return std_pooled
+
+
+def error_margin(df):
+
+    counts = df.groupby('question_id')['answer'].count()
+    stds = df.groupby('question_id')['answer'].std()
+    error_average = np.sqrt((1.96**2) * (stds.mean()**2) / counts.mean())
+
+    var_pooled = np.sum((counts - 1) * (stds**2)) / np.sum(counts - 1)
+    error_pooled = np.sqrt((1.96**2) * var_pooled / counts.mean())
+
+    return error_average, error_pooled
 
 
 if __name__ == '__main__':
@@ -67,6 +98,10 @@ if __name__ == '__main__':
     else:
         eval_func = subjective_eval.get_peamt().evaluate_from_midi
 
-    ret = evaluate_measure(load_pmt_data(), eval_func=eval_func)
+    df = load_pmt_data()
+    print(
+        f"Error margin with 95% of confidence (average, pooled): {error_margin(df)}"
+    )
+    ret = evaluate_measure(df, eval_func=eval_func)
 
     print(f"Agreement {ret:.4f}")
