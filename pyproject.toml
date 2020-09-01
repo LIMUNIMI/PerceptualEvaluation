@@ -20,6 +20,7 @@ mir_eval = "^0.5"
 plotly = "^4.8.1"
 dash = "^1.12.0"
 numba = "0.48"
+yapf = "^0.30.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"

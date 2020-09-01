@@ -42,15 +42,11 @@ Chose excerpts
    #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
       the dataset of mini-specs or download it from our mega_.
 
-   #. dataset size:
-      - aligned: 474.429 notes (831 batches in test, 178 in train))
-      - vienna: ?? (831 batches in test, 178 in train))
+   #. dataset size: 474.429 notes (831 batches in test, 178 in train))
 
    #. ``poetry run python -m perceptual.proposed train`` to train our model
       for velocity estimation and test it. I obtained the following
-      absolute error (avg, std) on the test set:
-      - alignment: 15.11, 10.94 (251 epochs)
-      - vienna:    15.10, 10.93 (326 epochs)
+      absolute error (avg, std) on the test set: 15.11, 10.94 (251 epochs)
 
    #. redo everything with vienna model (use ``--vienna`` for
       ``create_mini_specs`` and ``train``)
@@ -127,7 +123,7 @@ variables:
    to the answer of the users
 
 Also note that all answers in which users listened to for less than 5 seconds
-or didn;t move the cursor are completely discarded. This is hard-coded in final
+or didn't move the cursor are completely discarded. This is hard-coded in final
 section of the script.
 
 At each run, violin plots are created for each control group and each method.

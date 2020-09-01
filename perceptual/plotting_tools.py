@@ -39,11 +39,12 @@ def plot(df, obj_eval, excerpts_mean=True, variable=None):
     print("Plotting")
 
     def process(question):
+        sort_by = ['method'] + ([variable] if variable is not None else [])
         graphs = []
         if excerpts_mean:
             excerpt = 'mean'
             selected_data = df.loc[df['question'] == question].sort_values(
-                ['method', variable])
+                sort_by)
             # plotting means of the excerpts
             graphs.append(
                 _plot_data(selected_data, question, excerpt, variable,
@@ -51,8 +52,7 @@ def plot(df, obj_eval, excerpts_mean=True, variable=None):
         else:
             for excerpt in sorted(excerpts):
                 selected_data = df.loc[df['question'] == question].loc[
-                    df['excerpt_num'] == excerpt].sort_values(
-                        ['method', variable])
+                    df['excerpt_num'] == excerpt].sort_values(sort_by)
                 # plotting each excerpt
                 graphs.append(
                     _plot_data(selected_data, question, excerpt, variable,
@@ -142,60 +142,80 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
     methods = selected_data['method'].unique()
     fig_plot.add_trace(go.Scatter(x=methods, y=obj_eval[excerpt_num, :, 1, 2]))
 
+    error_margin_text = [
+        "(size, margin error) with 95% of confidence",
+        html.Br(), "methods: "
+    ]
+    error_margin_text += [str(method) + ", " for method in methods]
+    error_margin_text.append(html.Br())
+    if type(excerpt) is not int:
+        groupby = selected_data
+    else:
+        groupby = selected_data.loc[selected_data['excerpt_num'] == excerpt]
+
+    def _compute_errors_correlations(groupby_variable, selected_data_variable,
+                                     correlations, var):
+        this_groupby = groupby.loc[groupby_variable].groupby(
+            'method')['rating']
+        correlations = np.concatenate([
+            correlations,
+            compute_correlations(this_groupby, obj_eval, excerpt_num)
+        ],
+                                      axis=-2)
+
+        error_margin_text.append(f"var {var}: ")
+        for method in methods:
+            # computing std, and error margin
+            samples = selected_data.loc[selected_data_variable]
+            samples = samples.loc[samples['method'] == method]['rating']
+            sample_size = samples.count()
+            std = samples.std()
+            margin_error = np.sqrt((1.96**2) * (std**2) / sample_size)
+            error_margin_text.append(f"({sample_size} {margin_error:.2f}) ")
+        error_margin_text.append(html.Br())
+        return correlations
+
     if variable:
         variables = selected_data[variable].unique()
 
         fig_pvals = _compute_wilcoxon_pvals(selected_data, question, excerpt,
                                             variable)
 
-        error_margin_text = [
-            "(size, margin error) with 95% of confidence",
-            html.Br(), "methods: "
-        ]
-        error_margin_text += [str(method) + ", " for method in methods]
-        error_margin_text.append(html.Br())
         for var in variables:
-            if type(excerpt) is not int:
-                groupby = selected_data
-            else:
-                groupby = selected_data.loc[selected_data['excerpt_num'] ==
-                                            excerpt]
-            groupby = groupby.loc[groupby[variable] == var].groupby(
-                'method')['rating']
-            correlations = np.concatenate([
-                correlations,
-                compute_correlations(groupby, obj_eval, excerpt_num)
-            ],
-                axis=-2)
-
-            error_margin_text.append(f"var {var}: ")
-            for method in methods:
-                # computing std, and error margin
-                samples = selected_data.loc[selected_data[variable] == var]
-                samples = samples.loc[samples['method'] == method]['rating']
-                sample_size = samples.count()
-                std = samples.std()
-                margin_error = np.sqrt((1.96**2) * (std**2) / sample_size)
-                error_margin_text.append(f"({sample_size} {margin_error:.2f}) ")
-            error_margin_text.append(html.Br())
+            groupby_variable = groupby[variable] == var
+            print(groupby_variable)
+            selected_data_variable = selected_data[variable] == var
+            correlations = _compute_errors_correlations(
+                groupby_variable, selected_data_variable, correlations, var)
 
         correl_text = create_text_for_correlations(correlations)
         return html.Div([
             html.Div([
                 html.Div([dcc.Graph(figure=fig_plot)], className="col-md-12"),
             ],
-                className="row"),
+                     className="row"),
             html.Div([
                 html.Div([dcc.Graph(figure=fig)], className="col-md-2")
                 for fig in fig_pvals
             ],
-                className="row"),
+                     className="row"),
             html.P(error_margin_text),
             html.P(correl_text)
         ])
 
     else:
-        return dcc.Graph(figure=fig_plot)
+        correlations = _compute_errors_correlations(
+            groupby['rating'] > -1, selected_data['rating'] > -1, correlations,
+            'all')
+        correl_text = create_text_for_correlations(correlations)
+        return html.Div([
+            html.Div([
+                html.Div([dcc.Graph(figure=fig_plot)], className="col-md-12"),
+            ],
+                     className="row"),
+            html.P(error_margin_text),
+            html.P(correl_text)
+        ])
 
 
 def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):

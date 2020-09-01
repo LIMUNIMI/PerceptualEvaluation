@@ -56,6 +56,7 @@ def main():
 
     samples = np.array(samples)
     samples = StandardScaler().fit_transform(samples)
+    np.save("samples_PCA_2.npy", PCA(n_components=2).fit_transform(samples))
     samples = PCA(n_components=15).fit_transform(samples)
     points = farthest_points(samples, NUM_EXCERPTS, QUESTIONS)
     print("\nChosen songs:")
@@ -139,9 +140,9 @@ def create_excerpt(audio_path, time, name):
 
     transcription_1 = magenta_transcription.transcribe(full_audio, SR)
 
-    transcription_2, _, _, _ = proposed.transcribe(full_audio,
-                                                   data,
-                                                   score=None)
+    # transcription_2, _, _, _ = proposed.transcribe(full_audio,
+    #                                                data,
+    #                                                score=None)
 
     # chose another interpretation
     performance = '01'
@@ -160,8 +161,8 @@ def create_excerpt(audio_path, time, name):
                                   start_audio)
     transcription_1 = segment_mat(transcription_1, time[0][0], time[0][1],
                                   start_audio)
-    transcription_2 = segment_mat(transcription_2, time[0][0], time[0][1],
-                                  start_audio)
+    # transcription_2 = segment_mat(transcription_2, time[0][0], time[0][1],
+    #                               start_audio)
 
     # write scores to `to_be_synthesized` and audios to `excerpts`
     if not os.path.exists('to_be_synthesized'):
@@ -171,7 +172,7 @@ def create_excerpt(audio_path, time, name):
     mat2midipath(other, midi_path + 'other.mid')
     mat2midipath(transcription_0, midi_path + 'proposed.mid')
     mat2midipath(transcription_1, midi_path + 'magenta.mid')
-    mat2midipath(transcription_2, midi_path + 'vienna.mid')
+    # mat2midipath(transcription_2, midi_path + 'vienna.mid')
 
     if not os.path.exists('audio'):
         os.mkdir('audio')

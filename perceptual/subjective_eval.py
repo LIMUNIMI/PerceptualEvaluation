@@ -334,9 +334,9 @@ if __name__ == "__main__":
         print(f"""
 Syntax:
 
-{sys.argv[0]} [variable] [average] [ordinal] [rescale] [our_eval|peamt]
+{sys.argv[0]} variable ['average'] ['ordinal'] ['rescale'] ['our_eval'|'peamt']
 
-* `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general'. Default: 'expertise'
+* `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general', 'all'
 
 * `average`: if used, all answers from all excerpts are used for each question type; this will results in one plot per question type instead of one plot per (question type, excerpt). Also not that the median and mean values are *averaged* over all the excerpts.
 
@@ -351,6 +351,8 @@ Syntax:
         sys.exit()
     else:
         variable = sys.argv[1]
+        if variable == 'all':
+            variable = None
 
     excerpt_mean = 'average' in sys.argv
 
