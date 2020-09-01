@@ -12,6 +12,9 @@ from .make_template import TEMPLATE_PATH, SR
 import os
 import pickle
 from . import utils
+from copy import copy
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 #: duration of each pianoroll column in seconds
 RES = 0.005
@@ -30,6 +33,8 @@ OUT_SR = 44100
 #: file format for the excerpts: essentia still has some problem in writing
 #: mp3 in the python version
 FORMAT = 'flac'
+#: only produce plots
+ONLY_PLOTS = True
 
 audio_win_len = int(DURATION * SR)
 hop_audio = int(audio_win_len * HOP)
@@ -55,32 +60,63 @@ def main():
         songs += [i] * len(parallel_out[i][0])
 
     samples = np.array(samples)
+    samples_backup = copy(samples)
     samples = StandardScaler().fit_transform(samples)
     np.save("samples_PCA_2.npy", PCA(n_components=2).fit_transform(samples))
     samples = PCA(n_components=15).fit_transform(samples)
     points = farthest_points(samples, NUM_EXCERPTS, QUESTIONS)
-    print("\nChosen songs:")
-    for question in range(QUESTIONS):
-        print(f"\nQuestion {question+1}:")
-        for j, point in enumerate(points[:, question]):
-            path = dataset.paths[songs[point]][0]
-            time = positions[point]
-            print(f"Song {path}, seconds audio \
-{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
-{time[1][0]:.2f} - {time[1][1]:.2f}")
-            path = os.path.join(dataset.install_dir, path[0])
-            create_excerpt(path, time, f'q{question}_n{j}_')
+    if not ONLY_PLOTS:
+        print("\nChosen songs:")
+        for question in range(QUESTIONS):
+            print(f"\nQuestion {question+1}:")
+            for j, point in enumerate(points[:, question]):
+                path = dataset.paths[songs[point]][0]
+                time = positions[point]
+                print(f"Song {path}, seconds audio \
+    {time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
+    {time[1][0]:.2f} - {time[1][1]:.2f}")
+                path = os.path.join(dataset.install_dir, path[0])
+                create_excerpt(path, time, f'q{question}_n{j}_')
 
     distmat = squareform(pdist(samples))
     medoid = np.argmin(np.sum(distmat, axis=1))
-    path = dataset.paths[songs[medoid]][0]
-    time = positions[medoid]
-    print(f"The medoid of the whole set is: {path}, seconds audio \
-{time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
-{time[1][0]:.2f} - {time[1][1]:.2f}")
-    path = os.path.join(dataset.install_dir, path[0])
-    create_excerpt(path, time, f'q{question}_medoid_')
+    points = np.concatenate((points.flatten(), [medoid]))
+    radar_plot(samples_backup[points])
+    if not ONLY_PLOTS:
+        path = dataset.paths[songs[medoid]][0]
+        time = positions[medoid]
+        print(f"The medoid of the whole set is: {path}, seconds audio \
+    {time[0][0]:.2f} - {time[0][1]:.2f} ...... midi \
+    {time[1][0]:.2f} - {time[1][1]:.2f}")
+        path = os.path.join(dataset.install_dir, path[0])
+        create_excerpt(path, time, f'q{question}_medoid_')
     print(f"Total number of samples: {samples.shape[0]}")
+
+
+def radar_plot(samples):
+    """
+    produce radar plots
+    """
+    samples = samples[:, np.array(list(range(10)) + [-7, -6, -3])]
+    # normalize to maximum = 1
+    samples /= np.max(samples, axis=0)
+    theta = [
+        'avg pitch', 'std pitch', 'avg vel', 'std vel', 'avg vert', 'std vert',
+        'avg interv', 'std interv', 'avg dur', 'std dur', 'bpm', 'bpm 1st peak',
+        'bpm 2nd peak'
+    ]
+
+    fig = make_subplots(rows=1, cols=5, specs=[[{"type": "polar"} for i in range(5)]])
+    for i in range(samples.shape[0]):
+        fig.add_trace(go.Scatterpolar(r=samples[i], theta=theta,
+                                      fill='toself'),
+                      row=1,
+                      col=i+1) # cells start from (1, 1)
+
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True), ),
+                      showlegend=False)
+
+    fig.write_image('radar_plot.svg')
 
 
 def _my_prep_inputs(x, y, dist):
