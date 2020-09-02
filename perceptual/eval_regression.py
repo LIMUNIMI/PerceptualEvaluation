@@ -228,8 +228,8 @@ def main():
     obj_l1_err = np.mean(np.abs(obj_eval - sub_eval))
     peamt_l1_err = np.mean(np.abs(peamt_eval - sub_eval))
     print(f"Average error with selected features (new): {new_l1_err:.2f}")
-    print(f"Average error with selected features (obj): {obj_l1_err:.2f}")
-    print(f"Average error with selected features (peamt): {peamt_l1_err:.2f}")
+    print(f"Average error (obj): {obj_l1_err:.2f}")
+    print(f"Average error (peamt): {peamt_l1_err:.2f}")
     px.bar(y=model.coef_, title="noaudio").show()
 
     # correlation coeffients

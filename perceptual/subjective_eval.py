@@ -94,17 +94,17 @@ def evaluate(target,
     if type(pred) is str:
         pred = utils.midipath2mat(pred)
     midi = utils.make_pianoroll(pred, res=0.005)
-    features1 = excerpt_search.score_features(midi)
-    features1 += symbolic_bpms(pred)
-    features1 = scaler.transform(np.array(features1).reshape(1, -1))[0]
+    features_pred = excerpt_search.score_features(midi)
+    features_pred += symbolic_bpms(pred)
+    features_pred = scaler.transform(np.array(features_pred).reshape(1, -1))[0]
     midi = utils.make_pianoroll(target, res=0.005)
-    features2 = excerpt_search.score_features(midi)
-    features2 += symbolic_bpms(target)
-    features2 = scaler.transform(np.array(features2).reshape(1, -1))[0]
+    features_targ = excerpt_search.score_features(midi)
+    features_targ += symbolic_bpms(target)
+    features_targ = scaler.transform(np.array(features_targ).reshape(1, -1))[0]
 
     fmeasure = objective_eval.evaluate(target, pred)[1][2]
 
-    features = features1 - features2
+    features = features_targ - features_pred
     features = np.concatenate([features, [fmeasure]])[model.selected_features]
 
     return model.predict(features[None])

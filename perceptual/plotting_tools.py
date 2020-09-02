@@ -6,6 +6,7 @@ import plotly.express as px
 from scipy.stats import wilcoxon, pearsonr, spearmanr, kendalltau
 import numpy as np
 import plotly.graph_objects as go
+import os
 
 
 def plot(df, obj_eval, excerpts_mean=True, variable=None):
@@ -123,12 +124,14 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
         x='method',
         y='rating',
         box=True,
-        points="all",
+        # points="all",
         color=variable,
         violinmode='group',
         title=f'question {question}, excerpt {excerpt}, variable {variable}')
 
-    fig_plot.update_traces(meanline_visible=True)
+    fig_plot.update_traces(meanline_visible=True,
+                           spanmode='manual',
+                           span=[0, 1])
 
     if excerpt == 'mean':
         obj_eval = np.mean(obj_eval[:], axis=0)[np.newaxis]
@@ -141,6 +144,10 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
     correlations = compute_correlations(groupby, obj_eval, excerpt_num)
     methods = selected_data['method'].unique()
     fig_plot.add_trace(go.Scatter(x=methods, y=obj_eval[excerpt_num, :, 1, 2]))
+
+    if not os.path.exists('imgs'):
+        os.mkdir('imgs')
+    fig_plot.write_image(f"imgs/{question}_{excerpt}_{variable}.svg")
 
     error_margin_text = [
         "(size, margin error) with 95% of confidence",
