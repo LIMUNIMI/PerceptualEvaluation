@@ -34,7 +34,7 @@ OUT_SR = 44100
 #: mp3 in the python version
 FORMAT = 'flac'
 #: only produce plots
-ONLY_PLOTS = True
+ONLY_PLOTS = False
 
 audio_win_len = int(DURATION * SR)
 hop_audio = int(audio_win_len * HOP)

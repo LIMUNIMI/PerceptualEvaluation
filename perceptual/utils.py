@@ -7,7 +7,7 @@ import essentia.standard as es
 PLOT = False
 
 
-def farthest_points(samples, k, n, optimize=False):
+def farthest_points(samples, k, n, optimize=False, method='A'):
     """
     Computes `n` sets of `k` indices of farthest points.
 
@@ -31,7 +31,10 @@ def farthest_points(samples, k, n, optimize=False):
         the number of points per cluster to find
 
     `optimize` : bool
-        if using optimized algorithm which takes O(ND) instead of O(N^2).
+        if using optimized algorithm which takes O(ND) instead of O(N^2)
+
+    `method` : str
+        implemented: `A` and `C` as described in the paper
 
     Returns
     -------
@@ -53,29 +56,42 @@ def farthest_points(samples, k, n, optimize=False):
     # 2. For each cluster chose n points
     out = np.empty((k, n), dtype=np.int64)
     for i in range(k):
-        kth_cluster = samples[clusters == i + 1]
-        kth_cluster_indices = np.where(clusters == i + 1)[0]
+        if method == 'C':
+            for j in range(n):
+                others_points = samples[clusters != i + 1]
+                this_points = samples[clusters == i + 1]
+                this_points_idx = np.where(clusters == i + 1)[0]
+                max_dist = -1
+                for idx, point in enumerate(this_points):
+                    dist = np.min(
+                        np.mean(np.abs(others_points - point), axis=1))
+                    if dist > max_dist:
+                        out[i, j] = this_points_idx[idx]
+        elif method == 'A':
+            kth_cluster = samples[clusters == i + 1]
+            kth_cluster_indices = np.where(clusters == i + 1)[0]
 
-        # 2.0. for each point in the cluster, we compute the centroid in the
-        # set obtained by removing that point (complementary set):
-        others_centroid = np.empty_like(kth_cluster)
-        for l, j in enumerate(kth_cluster_indices):
-            others = np.concatenate((samples[:j], samples[j + 1:]))
-            others_centroid[l] = np.mean(others, axis=0)
+            # 2.0. for each point in the cluster, we compute the centroid in the
+            # set obtained by removing that point (complementary set):
+            others_centroid = np.empty_like(kth_cluster)
+            for l, j in enumerate(kth_cluster_indices):
+                others = np.concatenate((samples[:j], samples[j + 1:]))
+                others_centroid[l] = np.mean(others, axis=0)
 
-        # 2.1. now we compute the distance from each point of the cluster and
-        # the centroid of their complementary set
+            # 2.1. now we compute the distance from each point of the cluster and
+            # the centroid of their complementary set
 
-        # 2.2. we take the n largest values, that is: the n points that are
-        # most distant from the centroid of their complementary set
+            # 2.2. we take the n largest values, that is: the n points that are
+            # most distant from the centroid of their complementary set
 
-        # N.B. np.partition returns an array with the `-n`-th element in the
-        # position it would be if sorted and all larger value after it (not
-        # sorted, though
-        kth_cluster_points = np.argpartition(
-            np.mean(np.abs(kth_cluster - others_centroid), axis=1), -n)[-n:]
+            # N.B. np.partition returns an array with the `-n`-th element in the
+            # position it would be if sorted and all larger value after it (not
+            # sorted, though
+            kth_cluster_points = np.argpartition(
+                np.mean(np.abs(kth_cluster - others_centroid), axis=1),
+                -n)[-n:]
 
-        out[i] = kth_cluster_indices[kth_cluster_points]
+            out[i] = kth_cluster_indices[kth_cluster_points]
     np.random.shuffle(out.T)
 
     if PLOT:
@@ -153,7 +169,7 @@ def find_start_stop(audio, sample_rate=44100, seconds=False, threshold=-60):
         start = int(specframe2sample(start, hs, fs))
         stop = int(specframe2sample(stop, hs, fs))
 
-    if start == 2*hs:
+    if start == 2 * hs:
         start = 0
 
     return start, stop
@@ -266,7 +282,7 @@ def make_pianoroll(mat,
         pr[pitch, 0, start:start + attack] = vel
 
         # the eps_range before onset
-        start_eps = max(0, start-eps_range)
+        start_eps = max(0, start - eps_range)
         pr[pitch, 0, start_eps:start] = eps
 
         start += attack
@@ -403,4 +419,3 @@ def evaluate2d(estimate, ground_truth):
     err_offs[est_sorted] = _err_offs
 
     return err_ons, err_offs
-
