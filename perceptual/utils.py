@@ -4,8 +4,6 @@ from fastcluster import linkage_vector, linkage
 from scipy.cluster.hierarchy import fcluster
 import essentia.standard as es
 
-PLOT = False
-
 
 def farthest_points(samples, k, n, optimize=False, method='A'):
     """
@@ -28,13 +26,13 @@ def farthest_points(samples, k, n, optimize=False, method='A'):
         the number of clusters to find
 
     `n` : int
-        the number of points per cluster to find
+        the number of points per cluster to find, only with method `A`
 
     `optimize` : bool
         if using optimized algorithm which takes O(ND) instead of O(N^2)
 
     `method` : str
-        implemented: `A` and `C` as described in the paper
+        implemented: `A`, `B`, `C`, and `D` as described in the paper
 
     Returns
     -------
@@ -56,17 +54,40 @@ def farthest_points(samples, k, n, optimize=False, method='A'):
     # 2. For each cluster chose n points
     out = np.empty((k, n), dtype=np.int64)
     for i in range(k):
-        if method == 'C':
-            for j in range(n):
+        if method in ['B', 'C', 'D']:
+            this_points = samples[clusters == i + 1]
+            this_points_idx = np.where(clusters == i + 1)[0]
+            if method == 'C':
                 others_points = samples[clusters != i + 1]
-                this_points = samples[clusters == i + 1]
-                this_points_idx = np.where(clusters == i + 1)[0]
                 max_dist = -1
                 for idx, point in enumerate(this_points):
                     dist = np.min(
                         np.mean(np.abs(others_points - point), axis=1))
                     if dist > max_dist:
-                        out[i, j] = this_points_idx[idx]
+                        out[i, 0] = this_points_idx[idx]
+            elif method == 'B':
+                others_centroids = []
+                for c in range(k):
+                    if c == i:
+                        continue
+                    others_centroids.append(np.mean(samples[clusters == c +
+                                                            1]))
+                max_dist = -1
+                for other in others_centroids:
+                    dists = np.mean(np.abs(this_points - other), axis=1)
+                    idx = np.argmin(dists)
+                    if dists[idx] > max_dist:
+                        out[i, 0] = this_points_idx[idx]
+            elif method == 'D':
+                max_dist = -1
+                for idx, point in enumerate(this_points):
+                    others_points = np.concatenate(
+                        (samples[:idx], samples[idx + 1:]))
+                    dist = np.min(
+                        np.mean(np.abs(others_points - point), axis=1))
+                    if dist > max_dist:
+                        out[i, 0] = this_points_idx[idx]
+
         elif method == 'A':
             kth_cluster = samples[clusters == i + 1]
             kth_cluster_indices = np.where(clusters == i + 1)[0]
@@ -93,31 +114,6 @@ def farthest_points(samples, k, n, optimize=False, method='A'):
 
             out[i] = kth_cluster_indices[kth_cluster_points]
     np.random.shuffle(out.T)
-
-    if PLOT:
-        import visdom
-        from scipy.spatial.distance import pdist, squareform
-        mat = squareform(pdist(samples))
-        m = np.argsort(np.sum(mat, axis=1))[-k:]
-        vis = visdom.Visdom()
-        vis.heatmap(mat)
-        win = vis.scatter(X=samples, Y=clusters, opts={"markersize": 5})
-        vis.scatter(X=samples[out[:, 0]],
-                    update="append",
-                    name="chosen",
-                    win=win,
-                    opts={
-                        "markersymbol": "cross-open",
-                        "markersize": 10
-        })
-        vis.scatter(X=samples[m],
-                    update="append",
-                    name="selfsim",
-                    win=win,
-                    opts={
-                        "markersymbol": "square",
-                        "markersize": 10
-        })
 
     return out
 

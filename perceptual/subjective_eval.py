@@ -84,8 +84,7 @@ def symbolic_bpms(mat):
     return bpms
 
 
-def evaluate(target,
-             pred):
+def evaluate(target, pred):
 
     scaler = pickle.load(open('scaler.pkl', 'rb'))
     model = pickle.load(open('metric.pkl', 'rb'))
@@ -386,4 +385,4 @@ Syntax:
         'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
     ])
     app.layout = html.Div(graphs)
-    app.run_server(debug=False, use_reloader=False)
+    app.run_server(port=8563, debug=False, use_reloader=False)
