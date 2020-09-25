@@ -63,7 +63,10 @@ def main():
     samples_backup = copy(samples)
     samples = StandardScaler().fit_transform(samples)
     np.save("samples_PCA_2.npy", PCA(n_components=2).fit_transform(samples))
-    samples = PCA(n_components=15).fit_transform(samples)
+    pca = PCA(n_components=15)
+    samples = pca.fit_transform(samples)
+    print("Explained variance: ", pca.explained_variance_ratio_,
+          pca.explained_variance_ratio_.sum())
     points = farthest_points(samples, NUM_EXCERPTS, QUESTIONS)
     if not ONLY_PLOTS:
         print("\nChosen songs:")
@@ -102,16 +105,20 @@ def radar_plot(samples):
     samples /= np.max(samples, axis=0)
     theta = [
         'avg pitch', 'std pitch', 'avg vel', 'std vel', 'avg vert', 'std vert',
-        'avg interv', 'std interv', 'avg dur', 'std dur', 'bpm', 'bpm 1st peak',
-        'bpm 2nd peak'
+        'avg interv', 'std interv', 'avg dur', 'std dur', 'bpm',
+        'bpm 1st peak', 'bpm 2nd peak'
     ]
 
-    fig = make_subplots(rows=1, cols=5, specs=[[{"type": "polar"} for i in range(5)]])
+    fig = make_subplots(rows=1,
+                        cols=5,
+                        specs=[[{
+                            "type": "polar"
+                        } for i in range(5)]])
     for i in range(samples.shape[0]):
         fig.add_trace(go.Scatterpolar(r=samples[i], theta=theta,
                                       fill='toself'),
                       row=1,
-                      col=i+1) # cells start from (1, 1)
+                      col=i + 1)  # cells start from (1, 1)
 
     fig.update_layout(polar=dict(radialaxis=dict(visible=True), ),
                       showlegend=False)

@@ -115,7 +115,10 @@ def main(path):
     # looking for farthest VSTs
     vsts = np.array(vsts)
     vsts = StandardScaler().fit_transform(vsts)
-    vsts = PCA(n_components=10).fit_transform(vsts)
+    pca = PCA(n_components=10)
+    vsts = pca.fit_transform(vsts)
+    print("Explained variance: ", pca.explained_variance_ratio_,
+          pca.explained_variance_ratio_.sum())
     points = farthest_points(vsts, VST, 1)
 
     # taking paths of the correct VSTs
