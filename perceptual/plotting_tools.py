@@ -1,12 +1,14 @@
-from tqdm import tqdm
+import os
+
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 from joblib import Parallel, delayed
+from scipy.stats import kendalltau, kruskal, pearsonr, spearmanr, wilcoxon, f_oneway, normaltest
+from tqdm import tqdm
+
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.express as px
-from scipy.stats import wilcoxon, pearsonr, spearmanr, kendalltau
-import numpy as np
-import plotly.graph_objects as go
-import os
 
 
 def plot(df, obj_eval, excerpts_mean=True, variable=None):
@@ -168,7 +170,7 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
             correlations,
             compute_correlations(this_groupby, obj_eval, excerpt_num)
         ],
-                                      axis=-2)
+            axis=-2)
 
         error_margin_text.append(f"var {var}: ")
         for method in methods:
@@ -185,6 +187,16 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
     if variable:
         variables = selected_data[variable].unique()
 
+        # computing all the distributions and kruskal-wallis test
+        distributions = []
+        for var in variables:
+            for method in methods:
+                distributions.append(
+                    selected_data[(selected_data[variable] == var).values *
+                                  (selected_data['method'] == method).values]
+                    ['rating'].values)
+
+        # computing wilcoxon test
         fig_pvals = _compute_wilcoxon_pvals(selected_data, question, excerpt,
                                             variable)
 
@@ -196,93 +208,122 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
                 groupby_variable, selected_data_variable, correlations, var)
 
         correl_text = create_text_for_correlations(correlations)
-        return html.Div([
-            html.Div([
-                html.Div([dcc.Graph(figure=fig_plot)], className="col-md-12"),
-            ],
-                     className="row"),
-            html.Div([
-                html.Div([dcc.Graph(figure=fig)], className="col-md-2")
-                for fig in fig_pvals
-            ],
-                     className="row"),
-            html.P(error_margin_text),
-            html.P(correl_text)
-        ])
 
     else:
         correlations = _compute_errors_correlations(
             groupby['rating'] > -1, selected_data['rating'] > -1, correlations,
             'all')
         correl_text = create_text_for_correlations(correlations)
-        return html.Div([
-            html.Div([
-                html.Div([dcc.Graph(figure=fig_plot)], className="col-md-12"),
-            ],
-                     className="row"),
-            html.P(error_margin_text),
-            html.P(correl_text)
-        ])
+        distributions = [
+            selected_data[selected_data['method'] == method]['rating'].values
+            for method in methods
+        ]
+
+        fig_pvals = _compute_wilcoxon_pvals(selected_data, question, excerpt,
+                                            variable)
+    kruskal_h, kruskal_pval = kruskal(*distributions)
+    kruskal_text = [
+        f"Kruskal-Wallis (p-value, h-statistics): {kruskal_pval}, {kruskal_h}"
+    ]
+    f_h, f_pval = f_oneway(*distributions)
+    f_text = [
+        f"ANOVA (p-value, h-statistics): {f_pval}, {f_h}"
+    ]
+
+    return get_html_div(fig_plot, fig_pvals, kruskal_text,
+                        error_margin_text, correl_text, f_text)
 
 
 def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
-    variables = selected_data[variable].unique()
     methods = selected_data['method'].unique()
-    # computing wilcoxon matries for each method
     fig_pvals = []
-    for method in methods:
-        samples = selected_data.loc[selected_data['method'] == method]
-        pval = np.ones((len(variables), len(variables)))
-        for i, expi in enumerate(variables):
-            for j, expj in enumerate(variables):
-                if i != j:
-                    try:
-                        datai = samples.loc[samples[variable] == expi]
-                        dataj = samples.loc[samples[variable] == expj]
-                        maxlen = min(len(datai), len(dataj))
-                        _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
-                                                 dataj['rating'][:maxlen])
-                    except Exception as e:
-                        print("\nError in Wilcoxon test!:")
-                        print(e)
-                        print()
-        fig_pval = px.imshow(pval,
-                             x=variables,
-                             y=variables,
-                             title=f'method {method}',
-                             range_color=[0, 0.5])
+    if variable:
+        variables = selected_data[variable].unique()
+        # computing wilcoxon matries for each method
+        for method in methods:
+            samples = selected_data.loc[selected_data['method'] == method]
+            pval = np.ones((len(variables), len(variables)))
+            for i, expi in enumerate(variables):
+                for j, expj in enumerate(variables):
+                    if i != j:
+                        try:
+                            datai = samples.loc[samples[variable] == expi]
+                            dataj = samples.loc[samples[variable] == expj]
+                            maxlen = min(len(datai), len(dataj))
+                            _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
+                                                     dataj['rating'][:maxlen])
+                        except Exception as e:
+                            print("\nError in Wilcoxon test!:")
+                            print(e)
+                            print()
+            fig_pval = px.imshow(pval,
+                                 x=variables,
+                                 y=variables,
+                                 title=f'method {method}',
+                                 range_color=[0, 0.5])
 
-        # fig_pval.write_image(
-        #     os.path.join(SAVE_PATH,
-        #                  f'pval-{question}_{excerpt}_{variable}.svg'))
+            # fig_pval.write_image(
+            #     os.path.join(SAVE_PATH,
+            #                  f'pval-{question}_{excerpt}_{variable}.svg'))
 
+            fig_pvals.append(fig_pval)
+
+        # computing wilcoxon matrices for each variable
+        for var in variables:
+            samples = selected_data.loc[selected_data[variable] == var]
+            fig_pval = _wilcoxon_on_methods(methods, samples, var)
+            fig_pvals.append(fig_pval)
+    else:
+        samples = selected_data
+        fig_pval = _wilcoxon_on_methods(methods, samples, 'all')
         fig_pvals.append(fig_pval)
 
-    # computing wilcoxon matries for each variable
-    for var in variables:
-        samples = selected_data.loc[selected_data[variable] == var]
-        pval = np.ones((len(methods), len(methods)))
-        for i, expi in enumerate(methods):
-            for j, expj in enumerate(methods):
-                if i != j:
-                    try:
-                        datai = samples.loc[samples['method'] == expi]
-                        dataj = samples.loc[samples['method'] == expj]
-                        maxlen = min(len(datai), len(dataj))
-                        _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
-                                                 dataj['rating'][:maxlen])
-                    except Exception as e:
-                        print("\nError in Wilcoxon test!:")
-                        print(e)
-                        print()
-        fig_pval = px.imshow(pval,
-                             x=methods,
-                             y=methods,
-                             title=f'var {var}',
-                             range_color=[0, 0.5])
-
-        # fig_pval.write_image(
-        #     os.path.join(SAVE_PATH,
-        #                  f'pval-{question}_{excerpt}_{variable}.svg'))
-        fig_pvals.append(fig_pval)
     return fig_pvals
+
+
+def _wilcoxon_on_methods(methods, samples, var):
+    pval = np.ones((len(methods), len(methods)))
+    for i, expi in enumerate(methods):
+        for j, expj in enumerate(methods):
+            if i != j:
+                try:
+                    datai = samples.loc[samples['method'] == expi]
+                    dataj = samples.loc[samples['method'] == expj]
+                    maxlen = min(len(datai), len(dataj))
+                    _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
+                                             dataj['rating'][:maxlen])
+                except Exception as e:
+                    print("\nError in Wilcoxon test!:")
+                    print(e)
+                    print()
+    fig_pval = px.imshow(pval,
+                         x=methods,
+                         y=methods,
+                         title=f'var {var}',
+                         range_color=[0, 0.5])
+    return fig_pval
+
+    # fig_pval.write_image(
+    #     os.path.join(SAVE_PATH,
+    #                  f'pval-{question}_{excerpt}_{variable}.svg'))
+
+
+def get_html_div(fig_plot, fig_pvals, kruskal_text, error_margin_text,
+                 correl_text, f_text):
+    return html.Div([
+        html.Div([
+            html.Div([dcc.Graph(figure=fig_plot)], className="col-md-12"),
+        ],
+            className="row"),
+        html.Div([
+            html.Div([dcc.Graph(figure=fig)], className="col-md-12")
+            for fig in fig_pvals
+        ],
+            className="row"),
+        html.P(kruskal_text),
+        html.P(f_text),
+        html.P(error_margin_text),
+        html.P(correl_text)
+    ])
+
+
