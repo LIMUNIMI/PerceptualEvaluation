@@ -1,14 +1,15 @@
 import os
 
+import dash_core_components as dcc
+import dash_html_components as html
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from joblib import Parallel, delayed
-from scipy.stats import kendalltau, kruskal, pearsonr, spearmanr, wilcoxon, f_oneway, normaltest
+from scipy.stats import (f_oneway, kendalltau, kruskal, pearsonr, spearmanr,
+                         wilcoxon)
+from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
-
-import dash_core_components as dcc
-import dash_html_components as html
 
 
 def plot(df, obj_eval, excerpts_mean=True, variable=None):
@@ -226,12 +227,17 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
         f"Kruskal-Wallis (p-value, h-statistics): {kruskal_pval}, {kruskal_h}"
     ]
     f_h, f_pval = f_oneway(*distributions)
-    f_text = [
-        f"ANOVA (p-value, h-statistics): {f_pval}, {f_h}"
-    ]
+    f_text = [f"ANOVA (p-value, h-statistics): {f_pval}, {f_h}"]
 
-    return get_html_div(fig_plot, fig_pvals, kruskal_text,
-                        error_margin_text, correl_text, f_text)
+    return get_html_div(fig_plot, fig_pvals, kruskal_text, error_margin_text,
+                        correl_text, f_text)
+
+
+def correct_pvalues(pval):
+    pval_indices = np.tril_indices(pval.shape[0], -1)
+    _, corrected_pval, _, _ = multipletests(pval[pval_indices].flatten(),
+                                            method='holm')
+    pval[pval_indices] = corrected_pval
 
 
 def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
@@ -242,10 +248,10 @@ def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
         # computing wilcoxon matries for each method
         for method in methods:
             samples = selected_data.loc[selected_data['method'] == method]
-            pval = np.ones((len(variables), len(variables)))
+            pval = np.ones((len(variables), len(variables))) * 2
             for i, expi in enumerate(variables):
                 for j, expj in enumerate(variables):
-                    if i != j:
+                    if i > j:
                         try:
                             datai = samples.loc[samples[variable] == expi]
                             dataj = samples.loc[samples[variable] == expj]
@@ -256,6 +262,8 @@ def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
                             print("\nError in Wilcoxon test!:")
                             print(e)
                             print()
+            if pval.shape[0] > 2:
+                correct_pvalues(pval)
             fig_pval = px.imshow(pval,
                                  x=variables,
                                  y=variables,
@@ -282,10 +290,10 @@ def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
 
 
 def _wilcoxon_on_methods(methods, samples, var):
-    pval = np.ones((len(methods), len(methods)))
+    pval = np.ones((len(methods), len(methods))) * 2
     for i, expi in enumerate(methods):
         for j, expj in enumerate(methods):
-            if i != j:
+            if i > j:
                 try:
                     datai = samples.loc[samples['method'] == expi]
                     dataj = samples.loc[samples['method'] == expj]
@@ -296,6 +304,8 @@ def _wilcoxon_on_methods(methods, samples, var):
                     print("\nError in Wilcoxon test!:")
                     print(e)
                     print()
+    if pval.shape[0] > 2:
+        correct_pvalues(pval)
     fig_pval = px.imshow(pval,
                          x=methods,
                          y=methods,
@@ -325,5 +335,3 @@ def get_html_div(fig_plot, fig_pvals, kruskal_text, error_margin_text,
         html.P(error_margin_text),
         html.P(correl_text)
     ])
-
-

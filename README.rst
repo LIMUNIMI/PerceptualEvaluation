@@ -160,3 +160,8 @@ Alignment
 
 
 .. _mega: https://mega.nz/folder/KVExwayZ#TrXTvHleVhzBfBXt0FaOAA
+
+Credits
+=======
+
+#. `Federico Simonetta <https://federicosimonetta.eu.org>`_
