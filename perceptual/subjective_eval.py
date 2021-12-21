@@ -371,25 +371,21 @@ Syntax:
                        ordinal=ordinal)
     if 'our_eval' in sys.argv:
         obj_eval = excerpts_test(ordinal=ordinal, evaluate=evaluate)
+        measure_name = 'Proposed'
     elif 'peamt' in sys.argv:
         peamt = get_peamt()
         obj_eval = excerpts_test(ordinal=ordinal,
                                  evaluate=peamt.evaluate_from_midi)
+        measure_name = 'PEAMT'
     else:
         obj_eval = excerpts_test(ordinal=ordinal)
+        measure_name = 'F-measure'
 
     if rescale:
         obj_eval = 1 - 10**(-obj_eval)
 
-    plot(df, obj_eval, variable=variable, excerpts_mean=excerpt_mean)
-
-    # graphs = plot(df, obj_eval, variable=variable, excerpts_mean=excerpt_mean)
-
-    # app = dash.Dash(external_stylesheets=[
-    #     'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
-    # ])
-    # app.layout = html.Div([
-    #     html.H3("python -m perceptual." + os.path.basename(__file__)[:-3] +
-    #             " " + " ".join(sys.argv[1:])), *graphs
-    # ])
-    # app.run_server(port=8563, debug=False, use_reloader=False)
+    plot(df,
+         obj_eval,
+         measure_name,
+         variable=variable,
+         excerpts_mean=excerpt_mean)

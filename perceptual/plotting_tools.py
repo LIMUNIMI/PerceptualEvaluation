@@ -18,7 +18,7 @@ task_map = {
 }
 
 
-def plot(df, obj_eval, excerpts_mean=True, variable=None):
+def plot(df, obj_eval, measure_name, excerpts_mean=True, variable=None):
     """
     Arguments
     ---------
@@ -55,14 +55,15 @@ def plot(df, obj_eval, excerpts_mean=True, variable=None):
             selected_data = df.loc[df['question'] == question].sort_values(
                 sort_by)
             # plotting means of the excerpts
-            _plot_data(selected_data, question, excerpt, variable, obj_eval)
+            _plot_data(selected_data, question, excerpt, variable, obj_eval,
+                       measure_name)
         else:
             for excerpt in sorted(excerpts):
                 selected_data = df.loc[df['question'] == question].loc[
                     df['excerpt_num'] == excerpt].sort_values(sort_by)
                 # plotting each excerpt
                 _plot_data(selected_data, question, excerpt, variable,
-                           obj_eval)
+                           obj_eval, measure_name)
 
     Parallel(n_jobs=1)(delayed(process)(question)
                        for question in tqdm(questions))
@@ -92,7 +93,8 @@ def compute_correlations(groupby, obj_eval, excerpt):
     return correlations
 
 
-def _plot_data(selected_data, question, excerpt, variable, obj_eval):
+def _plot_data(selected_data, question, excerpt, variable, obj_eval,
+               measure_name):
 
     st.write(f"""
     ### Task: {task_map[question]} - Excerpt: {excerpt} - Controlled variable: {variable}
@@ -123,12 +125,12 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
         excerpt_num = excerpt
     correlations = compute_correlations(groupby, obj_eval, excerpt_num)
     st.write("Correlations:")
-    st.write(correlations)
+    st.table(correlations)
     methods = selected_data['method'].unique()
     fig_plot.add_trace(
         go.Scatter(x=methods,
                    y=obj_eval[excerpt_num, :, 1, 2],
-                   name="objective F-measure"))
+                   name=measure_name))
 
     if not os.path.exists('imgs'):
         os.mkdir('imgs')
@@ -164,7 +166,7 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval):
         st.write(error_margins)
 
         st.write(f"Correlations for {var}")
-        st.write(correlations)
+        st.table(correlations)
 
     if variable:
         variables = selected_data.unique()
