@@ -8,7 +8,6 @@ import pickle
 import torch
 import torch.nn.functional as F
 from torch import nn
-from asmd.asmd import audioscoredataset
 import numpy as np
 import sys
 import random
@@ -227,6 +226,7 @@ def create_mini_specs(data, mini_spec_path):
     Perform alignment and NMF but not velocity estimation; instead, saves all
     the mini_specs of each note in the Maestro dataset for successive training
     """
+    from asmd.asmd import audioscoredataset
     from .maestro_split_indices import maestro_splits
     train, validation, test = maestro_splits()
     dataset = audioscoredataset.Dataset().filter(datasets=["Maestro"])
