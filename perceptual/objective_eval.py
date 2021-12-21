@@ -2,7 +2,6 @@ from .utils import midipath2mat, midi_pitch_to_f0
 import mir_eval
 import numpy as np
 import pickle
-from . import proposed, magenta_transcription
 from .make_template import TEMPLATE_PATH, SR
 import os
 import warnings
@@ -152,6 +151,7 @@ def dataset_test(dataset):
 
 
 def process(i, dataset):
+    from . import proposed, magenta_transcription
     audio, sr = dataset.get_audio(i)
     score = dataset.get_score(i, score_type=['non_aligned'])
 
