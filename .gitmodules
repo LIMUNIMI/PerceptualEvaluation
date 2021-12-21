@@ -1,0 +1,3 @@
+[submodule "perceptual/asmd"]
+	path = asmd
+	url = git@github.com:LIMUNIMI/ASMD.git

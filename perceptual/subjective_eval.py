@@ -14,7 +14,7 @@ from . import utils, objective_eval, excerpt_search
 
 #################################
 # SETTINGS:
-PATH = "/home/sapo/Develop/http/listening/saves"
+PATH = "./listening_test_saves"
 DISCARD_BEFORE_THAN = datetime.datetime(year=2020,
                                         month=6,
                                         day=5,

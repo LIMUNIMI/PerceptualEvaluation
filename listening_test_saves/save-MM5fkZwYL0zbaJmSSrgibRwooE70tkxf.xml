@@ -1,0 +1,455 @@
+<?xml version="1.0"?>
+<waetresult key="MM5fkZwYL0zbaJmSSrgibRwooE70tkxf" state="complete"><waet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="test-schema.xsd" file-name="php/pool.php" url="https://www.lim.di.unimi.it/demo/listening/php/pool.php">
+  <setup interface="horizontal" projectReturn="save.php" returnURL="" randomiseOrder="true" poolSize="7" loudness="-23" crossFade="0.5" preSilence="0" postSilence="0" playOne="false" minNumberPlays="1">
+        <exitText>Thank you for participating in this listening test. You may now exit the test environment. If you have any suggestions or comment, please report it to [federico.simonetta@unimi.it](mailto:federico.simonetta@unimi.it).</exitText>
+        <survey location="pre">
+            <surveyradio id="expertise" mandatory="true">
+                <statement>Have you ever studied music? 
+
+                    _Quanto hai studiato musica?_</statement>
+                <option name="0">I have never studied music / Non ho mai studiato musica</option>
+                <option name="1">I study/have studied music for hobby / Ho studiato musica per hobby</option>
+                <option name="2">I study/have studied music professionally for a few years / Ho studiato musica a livello professinale per alcuni anni</option>
+                <option name="3">I have a professional degree in music / Ho una laurea (diploma di conservatorio) in musica o musicologia</option>
+                <option name="4">I work as professional musician / Lavoro come musicista professionista</option>
+            </surveyradio>
+            <surveyradio id="habits_classical" mandatory="true">
+                <statement>How often do you listen to **classical music** usually? 
+
+                    _Quanto ascolti **musica classica** normalmente?_ </statement>
+                <option name="0">never / mai</option>
+                <option name="1">less than 1 hour per week / meno di un'ora a settimana</option>
+                <option name="2">between 1 and 3 hours per week / tra 1 e 3 ore a settimana</option>
+                <option name="3">between 3 and 6 hours per week / tra 3 e 6 ore a settimana</option>
+                <option name="4">more than 6 hours per week / piu' di 6 ore a settimana</option>
+            </surveyradio>
+            <surveyradio id="habits_general" mandatory="true">
+                <statement>How often do you listen to **any genre** of music **except classical music** usually?
+
+            _Quanto ascolti **un qualunque genere** di musica **eccetto musica classica** normalmente?_ </statement>
+                <option name="0">never / mai</option>
+                <option name="1">less than 1 hour per week / meno di un'ora a settimana</option>
+                <option name="2">between 1 and 3 hours per week / tra 1 e 3 ore a settimana</option>
+                <option name="3">between 3 and 6 hours per week / tra 3 e 6 ore a settimana</option>
+                <option name="4">more than 6 hours per week / piu' di 6 ore a settimana</option>
+            </surveyradio>
+            <surveyradio id="headphones" mandatory="true">
+                <statement>How much cost the headphones you are using?
+
+            _Quanto costano le cuffie che stai usando?_ </statement>
+                <option name="0">0 - 10 euro</option>
+                <option name="1">10 - 20 euro</option>
+                <option name="2">20 - 40 euro</option>
+                <option name="3">&gt; 50 euro</option>
+            </surveyradio>
+        </survey>
+        <survey location="post">
+            <surveyquestion id="comments" boxsize="normal">
+                <statement>If you have comments about this test, please insert them here :)
+
+            _Se hai commenti riguardo al test, inseriscili qui :)_</statement>
+            </surveyquestion>
+        </survey>
+        <metric>
+            <metricenable>testTimer</metricenable>
+            <metricenable>elementTimer</metricenable>
+            <metricenable>elementFlagMoved</metricenable>
+        </metric>
+        <interface>
+            <interfaceoption name="fragmentPlayed" type="check"/>
+            <interfaceoption name="fragmentFullPlayback" type="check"/>
+            <interfaceoption name="volume" type="show"/>
+            <interfaceoption name="ticks" type="show"/>
+            <interfaceoption name="playhead" type="show"/>
+            <interfaceoption name="page-count" type="show"/>
+        </interface>
+    </setup>
+  <page id="training" hostURL="excerpts/training-" position="0" randomiseOrder="true">
+        <interface name="interpretation">
+            <title>Training</title>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="0.flac" id="training-0" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="1.flac" id="training-1" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="t.flac" id="training-t" gain="0" type="outside-reference"/>
+        <survey location="pre">
+            <surveystatement id="training_statement">
+                <statement>For each of the following recordings, rate how much you think the _interpretation_ is similar to the "reference" audio.
+
+                The following is only a simple test to let you get confident with the interface. You can play the reference audio and then listen to the other audio clips. You can listen to everything any number of times. Take all the time you need!
+
+                ---
+
+                    _Per ciascuna delle seguenti registrazioni, assegna un punteggio in base a quanto pensi che l'interpretazione sia simile a quella della "reference"._
+
+                    _La seguente e' solo un semplice test per renderti famigliare l'interfaccia. Puoi suonare la "reference" e poi ascoltare gli altri audio. Puoi ascoltare tutto un qualunque numero di volte. Prenditi tutto il tempo che desideri!_
+            </statement>
+            </surveystatement>
+        </survey>
+        <survey location="post">
+            <surveystatement id="rest_medoid_statement">
+                <statement>From now on, your answers will be used for our research!
+
+            _Da ora in poi le tue risposte verranno usate per la ricerca!_</statement>
+            </surveystatement>
+        </survey>
+    </page>
+  <page id="rest_medoid" hostURL="excerpts/q0_medoid_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="rest_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="rest_medoid-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="rest_medoid-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="rest_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="rest_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="rest_medoid-t" gain="0" type="outside-reference"/>
+        <survey location="pre"/>
+        <survey location="post"/>
+    </page>
+  <page id="rest_n0" hostURL="excerpts/q0_n0_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="rest_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="rest_n0-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="rest_n0-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="rest_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="rest_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="rest_n0-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="rest_n1" hostURL="excerpts/q0_n1_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="rest_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="rest_n1-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="rest_n1-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="rest_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="rest_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="rest_n1-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="rest_n2" hostURL="excerpts/q0_n2_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="rest_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="rest_n2-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="rest_n2-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="rest_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="rest_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="rest_n2-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="rest_n3" hostURL="excerpts/q0_n3_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="rest_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="rest_n3-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="rest_n3-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="rest_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="rest_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="rest_n3-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="resynth_medoid" hostURL="excerpts/q1_medoid_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="resynth_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="resynth_medoid-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="resynth_medoid-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="resynth_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="resynth_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="resynth_medoid-t" gain="0" type="outside-reference"/>
+        <survey location="pre"/>
+        <survey location="post"/>
+    </page>
+  <page id="resynth_n0" hostURL="excerpts/q1_n0_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="resynth_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="resynth_n0-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="resynth_n0-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="resynth_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="resynth_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="resynth_n0-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="resynth_n1" hostURL="excerpts/q1_n1_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="resynth_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="resynth_n1-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="resynth_n1-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="resynth_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="resynth_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="resynth_n1-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="resynth_n2" hostURL="excerpts/q1_n2_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="resynth_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="resynth_n2-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="resynth_n2-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="resynth_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="resynth_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="resynth_n2-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="resynth_n3" hostURL="excerpts/q1_n3_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="resynth_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="resynth_n3-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="resynth_n3-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="resynth_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="resynth_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="resynth_n3-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="transcr_medoid" hostURL="excerpts/q2_medoid_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="transcr_medoid-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="transcr_medoid-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="transcr_medoid-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="transcr_medoid-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="transcr_medoid-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="transcr_medoid-t" gain="0" type="outside-reference"/>
+        <survey location="pre"/>
+        <survey location="post"/>
+    </page>
+  <page id="transcr_n0" hostURL="excerpts/q2_n0_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="transcr_n0-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="transcr_n0-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="transcr_n0-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="transcr_n0-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="transcr_n0-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="transcr_n0-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="transcr_n1" hostURL="excerpts/q2_n1_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="transcr_n1-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="transcr_n1-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="transcr_n1-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="transcr_n1-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="transcr_n1-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="transcr_n1-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="transcr_n2" hostURL="excerpts/q2_n2_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="transcr_n2-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="transcr_n2-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="transcr_n2-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="transcr_n2-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="transcr_n2-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="transcr_n2-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+  <page id="transcr_n3" hostURL="excerpts/q2_n3_" randomiseOrder="true">
+        <interface name="interpretation">
+            <title/>
+            <interfaceoption type="check" name="fragmentPlayed"/>
+            <interfaceoption type="check" name="fragmentFullPlayback"/>
+            <interfaceoption type="check" name="scalerange"/>
+            <interfaceoption type="show" name="volume"/>
+            <scales>
+                <scalelabel position="0">Different interpretations</scalelabel>
+                <scalelabel position="25"/>
+                <scalelabel position="50">Don't know</scalelabel>
+                <scalelabel position="75"/>
+                <scalelabel position="100">Same interpretation</scalelabel>
+            </scales>
+        </interface>
+        <audioelement url="orig.flac" id="transcr_n3-0" gain="0" label="" type="reference" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="other.flac" id="transcr_n3-1" gain="0" label="" type="anchor" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="proposed.flac" id="transcr_n3-2" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <!-- <audioelement url="vienna.flac" id="transcr_n3-3" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/> -->
+        <audioelement url="magenta.flac" id="transcr_n3-4" gain="0" label="" type="normal" alwaysInclude="false" preSilence="0" postSilence="0" minNumberPlays="0"/>
+        <audioelement url="target.flac" id="transcr_n3-t" gain="0" type="outside-reference"/>
+        <survey location="post"/>
+    </page>
+</waet><datetime><date year="2020" month="6" day="19"/><time hour="10" minute="11" secs="35"/></datetime><navigator><platform>MacIntel</platform><vendor/><uagent>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:77.0) Gecko/20100101 Firefox/77.0</uagent><window innerWidth="2535" innerHeight="1244"/></navigator><survey location="pre" state="complete"><surveyresult ref="expertise" type="radio" duration="28.999"><response name="2">I study/have studied music professionally for a few years / Ho studiato musica a livello professinale per alcuni anni</response></surveyresult><surveyresult ref="habits_classical" type="radio" duration="17.976"><response name="2">between 1 and 3 hours per week / tra 1 e 3 ore a settimana</response></surveyresult><surveyresult ref="habits_general" type="radio" duration="37.11"><response name="4">more than 6 hours per week / piu' di 6 ore a settimana</response></surveyresult><surveyresult ref="headphones" type="radio" duration="10.735"><response name="1">10 - 20 euro</response></surveyresult></survey><survey location="post" state="complete"><surveyresult ref="comments" type="question" duration="28.134"><response>I think my ratings became more extreme over the course of experiment. Good luck with your research!</response></surveyresult></survey><page ref="rest_n3" presentedId="1" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">110.77950113378688</metricresult></metric><audioelement ref="rest_n3-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-8.94862888820987" presentedId="1"><metric><metricresult name="enableElementTimer">15.174240362811872</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="948326" duration="21.503990929705214"/><value>0.08</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="rest_n3-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="4.837702728092201" presentedId="2"><metric><metricresult name="enableElementTimer">29.730249433106565</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="924807" duration="20.970680272108844"/><value>0.34</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="rest_n3-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="2.1548021642094177" presentedId="3"><metric><metricresult name="enableElementTimer">21.07210884353742</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="924807" duration="20.970680272108844"/><value>0</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="rest_n3-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-9.110915189896252" presentedId="4"><metric><metricresult name="enableElementTimer">10.068752834467091</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="951149" duration="21.56800453514739"/><value>0.67</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="rest_n3-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="14.338012912934175" presentedId="Reference"><metric><metricresult name="enableElementTimer">29.892789115646252</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="1" sampleCount="882000" duration="20"/></audioelement></page><page ref="resynth_n1" presentedId="3" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">160.22929705215415</metricresult></metric><audioelement ref="resynth_n1-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-7.539211242366731" presentedId="1"><metric><metricresult name="enableElementTimer">27.216689342403583</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="717311" duration="16.265555555555554"/><value>0.63</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="resynth_n1-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-7.097760617563347" presentedId="2"><metric><metricresult name="enableElementTimer">30.48489795918374</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="898560" duration="20.375510204081632"/><value>0.77</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="resynth_n1-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-6.6789115998024045" presentedId="3"><metric><metricresult name="enableElementTimer">18.27410430838995</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="895232" duration="20.300045351473923"/><value>0.12</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="resynth_n1-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-6.42707089910326" presentedId="4"><metric><metricresult name="enableElementTimer">12.474920634920636</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="702208" duration="15.923083900226757"/><value>0.2</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="resynth_n1-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-6.306908776675179" presentedId="Reference"><metric><metricresult name="enableElementTimer">71.49714285714288</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="920103" duration="20.864013605442178"/></audioelement></page><page ref="transcr_medoid" presentedId="5" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">192.29315192743775</metricresult></metric><audioelement ref="transcr_medoid-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-9.894516293770316" presentedId="1"><metric><metricresult name="enableElementTimer">12.080181405895473</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="930816" duration="21.106938775510205"/><value>0.3</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="transcr_medoid-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-7.579447029053538" presentedId="2"><metric><metricresult name="enableElementTimer">53.15337868480765</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935680" duration="21.217233560090705"/><value>0.84</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="transcr_medoid-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-9.011005901445648" presentedId="3"><metric><metricresult name="enableElementTimer">31.878095238095284</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="953344" duration="21.61777777777778"/><value>0.68</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="transcr_medoid-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-9.336533368758495" presentedId="4"><metric><metricresult name="enableElementTimer">20.880544217687202</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="924159" duration="20.955986394557822"/><value>0.8</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="transcr_medoid-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-7.579447029053538" presentedId="Reference"><metric><metricresult name="enableElementTimer">72.00217687074837</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935680" duration="21.217233560090705"/></audioelement></page><page ref="transcr_n0" presentedId="7" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">159.73297052154203</metricresult></metric><audioelement ref="transcr_n0-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-6.13620427226909" presentedId="1"><metric><metricresult name="enableElementTimer">36.432108843537435</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="943616" duration="21.39718820861678"/><value>0.33</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="transcr_n0-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-7.414470755491076" presentedId="2"><metric><metricresult name="enableElementTimer">19.789206349206324</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="934656" duration="21.194013605442176"/><value>0.76</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="transcr_n0-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-6.885978358563914" presentedId="3"><metric><metricresult name="enableElementTimer">35.59909297052127</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935423" duration="21.21140589569161"/><value>0.89</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="transcr_n0-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-7.345884797551927" presentedId="4"><metric><metricresult name="enableElementTimer">8.225668934240502</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1289216" duration="29.23392290249433"/><value>0</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="transcr_n0-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-6.885978358563914" presentedId="Reference"><metric><metricresult name="enableElementTimer">56.08199546485275</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935423" duration="21.21140589569161"/></audioelement></page><page ref="transcr_n3" presentedId="9" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">105.09641723356003</metricresult></metric><audioelement ref="transcr_n3-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-9.72902234673811" presentedId="1"><metric><metricresult name="enableElementTimer">17.73714285714277</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1028864" duration="23.330249433106577"/><value>0.7</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="transcr_n3-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-10.29615603089313" presentedId="2"><metric><metricresult name="enableElementTimer">16.570340136054483</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="921088" duration="20.886349206349205"/><value>0.79</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="transcr_n3-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-9.306679473902273" presentedId="3"><metric><metricresult name="enableElementTimer">10.498321995464721</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1527296" duration="34.632562358276644"/><value>0.13</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="transcr_n3-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-10.176273433820676" presentedId="4"><metric><metricresult name="enableElementTimer">24.537687074830046</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="996352" duration="22.593015873015872"/><value>0.86</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="transcr_n3-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-10.176273433820676" presentedId="Reference"><metric><metricresult name="enableElementTimer">33.430929705215476</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="996352" duration="22.593015873015872"/></audioelement></page><page ref="rest_n2" presentedId="11" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">130.90249433106555</metricresult></metric><audioelement ref="rest_n2-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="9.074188892666832" presentedId="1"><metric><metricresult name="enableElementTimer">18.683356009070394</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="886233" duration="20.095986394557823"/><value>0.42</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="rest_n2-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="4.948139675879361" presentedId="2"><metric><metricresult name="enableElementTimer">7.514557823129508</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="923865" duration="20.949319727891158"/><value>0</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="rest_n2-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-5.429082644980811" presentedId="3"><metric><metricresult name="enableElementTimer">31.18730158730159</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="912575" duration="20.69331065759637"/><value>0.74</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="rest_n2-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-7.295105239544894" presentedId="4"><metric><metricresult name="enableElementTimer">9.961360544217314</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="629396" duration="14.27201814058957"/><value>0.11</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="rest_n2-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="18.163889923916464" presentedId="Reference"><metric><metricresult name="enableElementTimer">61.05106575963691</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="1" sampleCount="882000" duration="20"/></audioelement></page><page ref="rest_medoid" presentedId="13" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">127.53269841269866</metricresult></metric><audioelement ref="rest_medoid-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="7.713221469454357" presentedId="1"><metric><metricresult name="enableElementTimer">11.923446712018176</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="964320" duration="21.866666666666667"/><value>0.42</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="rest_medoid-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="5.04142401593808" presentedId="2"><metric><metricresult name="enableElementTimer">32.783673469387395</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="924807" duration="20.970680272108844"/><value>0.81</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="rest_medoid-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="6.811655255268741" presentedId="3"><metric><metricresult name="enableElementTimer">13.612698412698592</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="936096" duration="21.226666666666667"/><value>0.22</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="rest_medoid-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="1.7646258867213895" presentedId="4"><metric><metricresult name="enableElementTimer">11.142675736961337</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="917280" duration="20.8"/><value>0.06</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="rest_medoid-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-3.1712861380989104" presentedId="Reference"><metric><metricresult name="enableElementTimer">57.521632653061715</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="1" sampleCount="882000" duration="20"/></audioelement></page><page ref="transcr_n1" presentedId="15" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">84.26811791383216</metricresult></metric><audioelement ref="transcr_n1-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-8.982879339869658" presentedId="1"><metric><metricresult name="enableElementTimer">25.710294784581038</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="898560" duration="20.375510204081632"/><value>0.91</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="transcr_n1-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-9.64919959967375" presentedId="2"><metric><metricresult name="enableElementTimer">11.897324263038627</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="717311" duration="16.265555555555554"/><value>0.22</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="transcr_n1-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-9.16617738350814" presentedId="3"><metric><metricresult name="enableElementTimer">11.250068027210546</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="895232" duration="20.300045351473923"/><value>0.01</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="transcr_n1-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-8.558020366324437" presentedId="4"><metric><metricresult name="enableElementTimer">12.37913832199547</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="702208" duration="15.923083900226757"/><value>0</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="transcr_n1-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-8.982879339869658" presentedId="Reference"><metric><metricresult name="enableElementTimer">23.031292517006477</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="898560" duration="20.375510204081632"/></audioelement></page><page ref="resynth_n3" presentedId="2" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">170.63764172335607</metricresult></metric><audioelement ref="resynth_n3-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-8.214451133224765" presentedId="1"><metric><metricresult name="enableElementTimer">9.282176870748287</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1527296" duration="34.632562358276644"/><value>0.06</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="resynth_n3-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-8.721754627965009" presentedId="2"><metric><metricresult name="enableElementTimer">25.95990929705215</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="921088" duration="20.886349206349205"/><value>0.56</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="resynth_n3-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-8.721246438272033" presentedId="3"><metric><metricresult name="enableElementTimer">54.92680272108839</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="996352" duration="22.593015873015872"/><value>0.77</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="resynth_n3-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-8.846077839107238" presentedId="4"><metric><metricresult name="enableElementTimer">8.620408163265324</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1028864" duration="23.330249433106577"/><value>0.47</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="resynth_n3-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-8.838862415016553" presentedId="Reference"><metric><metricresult name="enableElementTimer">62.67356009070295</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="948326" duration="21.503990929705214"/></audioelement><error time="3.8516099773243013">You have not played fragments 1, 2, 3, 4 enough. Please keep listening</error></page><page ref="resynth_n2" presentedId="6" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">137.7146485260771</metricresult></metric><audioelement ref="resynth_n2-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-3.3200896300112355" presentedId="1"><metric><metricresult name="enableElementTimer">29.231020408163204</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="856320" duration="19.41768707482993"/><value>0.45</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="resynth_n2-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-6.8255819256547205" presentedId="2"><metric><metricresult name="enableElementTimer">14.991383219954741</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="656640" duration="14.889795918367346"/><value>0.06</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="resynth_n2-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-7.941836010945121" presentedId="3"><metric><metricresult name="enableElementTimer">15.978231292516966</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1168640" duration="26.499773242630386"/><value>0.06</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="resynth_n2-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-5.301834039939667" presentedId="4"><metric><metricresult name="enableElementTimer">21.19691609977326</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="930304" duration="21.095328798185943"/><value>0.24</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="resynth_n2-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-8.588249088691576" presentedId="Reference"><metric><metricresult name="enableElementTimer">46.31800453514734</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="912575" duration="20.69331065759637"/></audioelement></page><page ref="transcr_n2" presentedId="10" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">121.93088435374148</metricresult></metric><audioelement ref="transcr_n2-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-5.059063736331094" presentedId="1"><metric><metricresult name="enableElementTimer">17.49333333333334</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="856320" duration="19.41768707482993"/><value>0.93</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="transcr_n2-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-7.023083414536078" presentedId="2"><metric><metricresult name="enableElementTimer">9.029659863945426</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="656640" duration="14.889795918367346"/><value>0.16</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="transcr_n2-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-6.679805473073284" presentedId="3"><metric><metricresult name="enableElementTimer">24.95564625850352</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="930304" duration="21.095328798185943"/><value>0.4</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="transcr_n2-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-9.73593462540201" presentedId="4"><metric><metricresult name="enableElementTimer">11.084625850340217</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1168640" duration="26.499773242630386"/><value>0</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="transcr_n2-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-6.679805473073284" presentedId="Reference"><metric><metricresult name="enableElementTimer">52.46548752834474</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="930304" duration="21.095328798185943"/></audioelement></page><page ref="resynth_n0" presentedId="14" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">131.47428571428554</metricresult></metric><audioelement ref="resynth_n0-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-4.597472151995393" presentedId="1"><metric><metricresult name="enableElementTimer">13.101859410431189</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="943616" duration="21.39718820861678"/><value>0.77</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="resynth_n0-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-5.517675064622669" presentedId="2"><metric><metricresult name="enableElementTimer">19.24643990929735</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="934656" duration="21.194013605442176"/><value>0.65</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="resynth_n0-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-4.5045751618308385" presentedId="3"><metric><metricresult name="enableElementTimer">32.327981859410556</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935423" duration="21.21140589569161"/><value>0.83</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="resynth_n0-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-5.289428984466035" presentedId="4"><metric><metricresult name="enableElementTimer">10.193560090702704</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1289216" duration="29.23392290249433"/><value>0</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="resynth_n0-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-6.090683083115351" presentedId="Reference"><metric><metricresult name="enableElementTimer">56.468027210883974</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="938919" duration="21.290680272108844"/></audioelement></page><page ref="rest_n1" presentedId="4" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">430.33832199546487</metricresult></metric><audioelement ref="rest_n1-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="14.080104923987214" presentedId="1"><metric><metricresult name="enableElementTimer">8.449160997732406</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="920103" duration="20.864013605442178"/><value>0.3</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="rest_n1-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="14.84332326316951" presentedId="2"><metric><metricresult name="enableElementTimer">9.737868480725638</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="735705" duration="16.68265306122449"/><value>0.18</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="rest_n1-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="1.464517635891859" presentedId="3"><metric><metricresult name="enableElementTimer">9.534693877551035</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="923865" duration="20.949319727891158"/><value>0</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="rest_n1-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="9.083778051282238" presentedId="4"><metric><metricresult name="enableElementTimer">17.020226757369528</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="746055" duration="16.91734693877551"/><value>0.8</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="rest_n1-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-0.0337772615387165" presentedId="Reference"><metric><metricresult name="enableElementTimer">40.80616780045352</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="1" sampleCount="882000" duration="20"/></audioelement></page><page ref="rest_n0" presentedId="12" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">85.84997732426291</metricresult></metric><audioelement ref="rest_n0-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="1.320495210992401" presentedId="1"><metric><metricresult name="enableElementTimer">7.804807256235563</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="950208" duration="21.546666666666667"/><value>0.02</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="rest_n0-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-0.3427844708737379" presentedId="2"><metric><metricresult name="enableElementTimer">9.601451247165642</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="934215" duration="21.18401360544218"/><value>0</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="rest_n0-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="0.5121905534773996" presentedId="3"><metric><metricresult name="enableElementTimer">20.630929705215294</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="905049" duration="20.52265306122449"/><value>0.61</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="rest_n0-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-0.4246637122865593" presentedId="4"><metric><metricresult name="enableElementTimer">21.400090702947637</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="938919" duration="21.290680272108844"/><value>0.15</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="rest_n0-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-2.0945496714458507" presentedId="Reference"><metric><metricresult name="enableElementTimer">20.10848072562385</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="1" sampleCount="882000" duration="20"/></audioelement></page><page ref="resynth_medoid" presentedId="8" state="complete"><survey location="pre" state="empty"/><survey location="post" state="empty"/><metric><metricresult id="testTime">221.39065759637197</metricresult></metric><audioelement ref="resynth_medoid-2" type="normal" url="proposed.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/proposed.flac" gain="0" playGain="-7.753406259020926" presentedId="1"><metric><metricresult name="enableElementTimer">20.16653061224497</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="930816" duration="21.106938775510205"/><value>0.26</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="resynth_medoid-1" type="anchor" url="other.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/other.flac" gain="0" playGain="-6.901994773264043" presentedId="2"><metric><metricresult name="enableElementTimer">20.793469387755067</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="953344" duration="21.61777777777778"/><value>0.2</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="resynth_medoid-0" type="reference" url="orig.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/orig.flac" gain="0" playGain="-5.1134748768876275" presentedId="3"><metric><metricresult name="enableElementTimer">24.317097505668926</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="935680" duration="21.217233560090705"/><value>0.9</value><comment><question>Comment on track 3</question><response/></comment></audioelement><audioelement ref="resynth_medoid-4" type="normal" url="magenta.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/magenta.flac" gain="0" playGain="-7.029474427470573" presentedId="4"><metric><metricresult name="enableElementTimer">60.72888888888883</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="924159" duration="20.955986394557822"/><value>0.24</value><comment><question>Comment on track 4</question><response/></comment></audioelement><audioelement ref="resynth_medoid-t" type="outside-reference" url="target.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/target.flac" gain="0" playGain="-5.567916832079366" presentedId="Reference"><metric><metricresult name="enableElementTimer">71.42458049886613</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="936096" duration="21.226666666666667"/></audioelement></page><page ref="training" presentedId="0" state="complete"><survey location="pre" state="complete"/><survey location="post" state="complete"/><metric><metricresult id="testTime">109.49079365079365</metricresult></metric><audioelement ref="training-1" type="normal" url="1.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/1.flac" gain="0" playGain="-5.517203547276674" presentedId="1"><metric><metricresult name="enableElementTimer">44.303673469387746</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="1225759" duration="27.79498866213152"/><value>0.68</value><comment><question>Comment on track 1</question><response/></comment></audioelement><audioelement ref="training-0" type="normal" url="0.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/0.flac" gain="0" playGain="-2.4913787586187333" presentedId="2"><metric><metricresult name="enableElementTimer">16.57614512471656</metricresult><metricresult name="elementFlagMoved">true</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="882000" duration="20"/><value>0.23</value><comment><question>Comment on track 2</question><response/></comment></audioelement><audioelement ref="training-t" type="outside-reference" url="t.flac" fqurl="https://www.lim.di.unimi.it/demo/listening/t.flac" gain="0" playGain="-7.1115807569839" presentedId="Reference"><metric><metricresult name="enableElementTimer">46.78530612244896</metricresult><metricresult name="elementFlagMoved">false</metricresult></metric><file sampleRate="44100" channels="2" sampleCount="884900" duration="20.065759637188208"/></audioelement></page></waetresult>
