@@ -1,3 +1,6 @@
+<!-- 
+pandoc --to revealjs -V revealjs-url=reveal.js-3.9.2 --output index.html --standalone index.md
+-->
 ---
 title: Listening test
 

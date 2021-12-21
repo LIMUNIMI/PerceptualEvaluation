@@ -12,14 +12,24 @@ tools, if the dependencies listed in ``pyproject.toml`` are installed.
 Environment
 -----------
 
-#. ``pyenv install 3.6.9``
-#. ``git clone <this-repo-url>``
+We provide two ways to setup a python environment: using `poetry` and using
+standard `venv`. The following is an example of setup for `venv`.
+`pyproject.toml` file is provided so that you can use `poetry install
+--no-root` if you like. The two methods slightly differ in the version of the
+installed packages, though. We used the `poetry` version in the experiments.
+
 #. ``cd <repo>``
-#. ``pyenv local 3.6.9``
-#. ``poetry install``
+#. ``git clone <this-repo-url>``
+#. ``pyenv install --patch 3.6.9 < python_alignment.patch; pyenv local 3.6.9``
+   or just use python 3.6.9; note that the install command is using this `patch
+   <https://github.com/pyenv/pyenv/issues/1889#issuecomment-837697366>`_
+#. ``python -m venv .venv; source .venv/bin/activate.fish``
+#. ``python -m pip install -U pip``
+#. ``python -m pip install -r requirements.txt``
 #. ``pip install git+https://github.com/CPJKU/madmom -c constraints.txt`` (this
-   is needed because google sucks and has an exact dependency for an old mido
-   version in its requirements.txt)
+   is needed because magenta has an exact dependency for an old mido version in
+   its requirements.txt)
+#. ``python setup.py build_ext --inplace``
 
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from
 ``asmd`` package:

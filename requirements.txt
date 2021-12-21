@@ -1,0 +1,17 @@
+essentia
+fastcluster
+scipy
+joblib
+pretty_midi
+magenta
+fastdtw
+psutil
+mir_eval
+plotly
+dash
+numba
+kaleido
+statsmodels
+pandas
+cython
+torch
