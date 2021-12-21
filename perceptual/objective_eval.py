@@ -1,5 +1,4 @@
 from .utils import midipath2mat, midi_pitch_to_f0
-from asmd.asmd.audioscoredataset import Dataset
 import mir_eval
 import numpy as np
 import pickle
@@ -7,6 +6,7 @@ from . import proposed, magenta_transcription
 from .make_template import TEMPLATE_PATH, SR
 import os
 import warnings
+
 warnings.simplefilter('ignore', FutureWarning)
 
 DATASET = "SMD"
@@ -129,6 +129,7 @@ def excerpts_test(path=EXCERPTS_DIR, ordinal=False, evaluate=evaluate):
 
 
 def dataset_test(dataset):
+    from asmd.asmd.audioscoredataset import Dataset
     dataset = Dataset().filter(datasets=[dataset])
     out = dataset.parallel(process, n_jobs=N_JOBS)
     out = np.stack(out)
