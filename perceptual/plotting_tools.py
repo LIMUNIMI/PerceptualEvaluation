@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from joblib import Parallel, delayed
 from scipy.stats import (f_oneway, kendalltau, kruskal, pearsonr, spearmanr,
-                         wilcoxon)
+                         wilcoxon, ttest_rel, shapiro)
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
@@ -125,7 +125,7 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval,
         excerpt_num = excerpt
     correlations = compute_correlations(groupby, obj_eval, excerpt_num)
     st.write("Correlations:")
-    st.table(correlations)
+    st.table(correlations.style.format('{:.2e}'))
     methods = selected_data['method'].unique()
     fig_plot.add_trace(
         go.Scatter(x=methods,
@@ -166,7 +166,7 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval,
         st.write(error_margins)
 
         st.write(f"Correlations for {var}")
-        st.table(correlations)
+        st.table(correlations.style.format('{:.2e}'))
 
     if variable:
         variables = selected_data.unique()
@@ -180,8 +180,11 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval,
                                   (selected_data['method']
                                    == method).values]['rating'].values)
 
-        # computing wilcoxon test
-        _compute_wilcoxon_pvals(selected_data, question, excerpt, variable)
+        # computing wilcoxon, and t-test test
+        st.write("Wilcoxon test")
+        _compute_pvals(selected_data, question, excerpt, variable, wilcoxon)
+        st.write("t-test (related variables)")
+        _compute_pvals(selected_data, question, excerpt, variable, ttest_rel)
         for var in variables:
             groupby_variable = groupby[variable] == var
             print(groupby_variable)
@@ -197,7 +200,11 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval,
             for method in methods
         ]
 
-        _compute_wilcoxon_pvals(selected_data, question, excerpt, variable)
+        # computing wilcoxon, and t-test test
+        st.write("Wilcoxon test")
+        _compute_pvals(selected_data, question, excerpt, variable, wilcoxon)
+        st.write("t-test (related variables)")
+        _compute_pvals(selected_data, question, excerpt, variable, ttest_rel)
 
     kruskal_h, kruskal_pval = kruskal(*distributions)
     st.write(
@@ -206,7 +213,18 @@ def _plot_data(selected_data, question, excerpt, variable, obj_eval,
     f_h, f_pval = f_oneway(*distributions)
     st.write(f"ANOVA (p-value, h-statistics): {f_pval:.2e}, {f_h:.2f}")
 
+    shapiro_pvals(distributions, methods)
+
     st.write("---")
+
+
+def shapiro_pvals(distributions, methods):
+    st.write("Shapiro-Wilk tests:")
+    shapiro_pval = [shapiro(d)[1] for d in distributions]
+    if len(distributions) > 2:
+        st.write("_using Bonferroni-Holm correction!_")
+        _, shapiro_pval, _, _ = multipletests(shapiro_pval, method='holm')
+    st.write({m: f"{shapiro_pval[i]:.2e}" for i, m in enumerate(methods)})
 
 
 def correct_pvalues(pval):
@@ -216,11 +234,12 @@ def correct_pvalues(pval):
     pval[pval_indices] = corrected_pval
 
 
-def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
+def _compute_pvals(selected_data, question, excerpt, variable,
+                   statistics_func):
     methods = selected_data['method'].unique()
     if variable:
         variables = selected_data[variable].unique()
-        # computing wilcoxon matries for each method
+        # computing pval for each method
         for method in methods:
             samples = selected_data.loc[selected_data['method'] == method]
             pval = np.full((len(variables), len(variables)), np.nan)
@@ -231,26 +250,32 @@ def _compute_wilcoxon_pvals(selected_data, question, excerpt, variable):
                             datai = samples.loc[samples[variable] == expi]
                             dataj = samples.loc[samples[variable] == expj]
                             maxlen = min(len(datai), len(dataj))
-                            _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
-                                                     dataj['rating'][:maxlen])
+                            _, pval[i, j] = statistics_func(
+                                datai['rating'][:maxlen],
+                                dataj['rating'][:maxlen])
                         except Exception as e:
-                            print("\nError in Wilcoxon test!:")
+                            print(
+                                f"\nError while computing pvals with {statistics_func} test!:"
+                            )
                             print(e)
                             print()
             if pval.shape[0] > 2:
                 correct_pvalues(pval)
-            st.write(pd.DataFrame(pval, columns=variables, index=variables))
+                st.write("_using Bonferroni-Holm correction!_")
+            st.table(
+                pd.DataFrame(pval, columns=variables,
+                             index=variables).style.format('{:.2e}'))
 
-        # computing wilcoxon matrices for each variable
+        # computing pval for each variable
         for var in variables:
             samples = selected_data.loc[selected_data[variable] == var]
-            _wilcoxon_on_methods(methods, samples, var)
+            _pval_on_methods(methods, samples, var, statistics_func)
     else:
         samples = selected_data
-        _wilcoxon_on_methods(methods, samples, 'all')
+        _pval_on_methods(methods, samples, 'all', statistics_func)
 
 
-def _wilcoxon_on_methods(methods, samples, var):
+def _pval_on_methods(methods, samples, var, statistics_func):
     pval = np.full((len(methods), len(methods)), np.nan)
     for i, expi in enumerate(methods):
         for j, expj in enumerate(methods):
@@ -259,13 +284,18 @@ def _wilcoxon_on_methods(methods, samples, var):
                     datai = samples.loc[samples['method'] == expi]
                     dataj = samples.loc[samples['method'] == expj]
                     maxlen = min(len(datai), len(dataj))
-                    _, pval[i, j] = wilcoxon(datai['rating'][:maxlen],
-                                             dataj['rating'][:maxlen])
+                    _, pval[i, j] = statistics_func(datai['rating'][:maxlen],
+                                                    dataj['rating'][:maxlen])
                 except Exception as e:
-                    print("\nError in Wilcoxon test!:")
+                    print(
+                        f"\nError while computing pvals with {statistics_func} test!:"
+                    )
+
                     print(e)
                     print()
     if pval.shape[0] > 2:
         correct_pvalues(pval)
-    st.write(f"p-values for {var}")
-    st.write(pd.DataFrame(pval, columns=methods, index=methods))
+        st.write("_using Bonferroni-Holm correction!_")
+    st.table(
+        pd.DataFrame(pval, columns=methods,
+                     index=methods).style.format('{:.2e}'))
