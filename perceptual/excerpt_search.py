@@ -6,7 +6,7 @@ from .utils import farthest_points, find_start_stop, midipath2mat, mat2midipath
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial.distance import pdist, squareform
-from asmd.audioscoredataset import Dataset
+from asmd.asmd.audioscoredataset import Dataset
 from . import proposed, magenta_transcription
 from .make_template import TEMPLATE_PATH, SR
 import os

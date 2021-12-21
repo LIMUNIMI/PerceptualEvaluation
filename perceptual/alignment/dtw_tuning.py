@@ -3,7 +3,7 @@ from librosa.sequence import dtw
 import fastdtw
 from .. import utils
 import pickle
-from asmd import audioscoredataset as asd
+from asmd.asmd import audioscoredataset as asd
 import os
 from . import cdist
 import random

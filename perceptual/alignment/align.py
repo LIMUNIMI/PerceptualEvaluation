@@ -5,7 +5,7 @@ import csv
 from .. import utils
 import numpy as np
 
-from asmd import audioscoredataset
+from asmd.asmd import audioscoredataset
 if len(sys.argv) < 1:
     print("Error: missing algorithm, add `ewert` or `amt`")
     sys.exit(2)

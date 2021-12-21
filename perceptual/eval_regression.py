@@ -8,7 +8,7 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from copy import copy
-from asmd.audioscoredataset import Dataset
+from asmd.asmd.audioscoredataset import Dataset
 import random
 from . import excerpt_search
 from . import objective_eval

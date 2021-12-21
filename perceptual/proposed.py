@@ -8,7 +8,7 @@ import pickle
 import torch
 import torch.nn.functional as F
 from torch import nn
-from asmd import audioscoredataset
+from asmd.asmd import audioscoredataset
 import numpy as np
 import sys
 import random

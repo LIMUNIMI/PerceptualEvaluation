@@ -1,5 +1,5 @@
 from .utils import midipath2mat, midi_pitch_to_f0
-from asmd.audioscoredataset import Dataset
+from asmd.asmd.audioscoredataset import Dataset
 import mir_eval
 import numpy as np
 import pickle

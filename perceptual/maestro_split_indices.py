@@ -1,5 +1,5 @@
 import json
-from asmd import audioscoredataset
+from asmd.asmd import audioscoredataset
 
 MAESTRO_JSON = "maestro-v2.0.0.json"
 
