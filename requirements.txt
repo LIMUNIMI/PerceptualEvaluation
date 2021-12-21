@@ -8,10 +8,10 @@ fastdtw
 psutil
 mir_eval
 plotly
-dash
 numba
 kaleido
 statsmodels
 pandas
 cython
 torch
+streamlit

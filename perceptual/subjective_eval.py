@@ -3,8 +3,6 @@ import os
 import re
 import datetime
 import pandas as pd
-import dash
-import dash_html_components as html
 import numpy as np
 import xml.etree.ElementTree as ET
 import pickle
@@ -198,7 +196,10 @@ CREATE TABLE "ANSWERS" (
                 for variable in variables:
                     value = variable.find('./response').get('name')
                     name = variable.get('ref')
-                    variables_dict[name] = MAP_VALUES[value]
+                    if name == 'headphones':
+                        variables_dict[name] = value
+                    else:
+                        variables_dict[name] = MAP_VALUES[value]
 
                 # inserting user
                 db_cursor.execute(f"""
@@ -247,6 +248,7 @@ VALUES (
 
     db_cursor.close()
     db.commit()
+
     return db
 
 
@@ -327,7 +329,7 @@ def count_users(db):
     print("\n")
 
 
-if __name__ == "__main__":
+def main():
     import sys
     if len(sys.argv) < 2:
         print(f"""
@@ -379,10 +381,15 @@ Syntax:
     if rescale:
         obj_eval = 1 - 10**(-obj_eval)
 
-    graphs = plot(df, obj_eval, variable=variable, excerpts_mean=excerpt_mean)
+    plot(df, obj_eval, variable=variable, excerpts_mean=excerpt_mean)
 
-    app = dash.Dash(external_stylesheets=[
-        'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
-    ])
-    app.layout = html.Div(graphs)
-    app.run_server(port=8563, debug=False, use_reloader=False)
+    # graphs = plot(df, obj_eval, variable=variable, excerpts_mean=excerpt_mean)
+
+    # app = dash.Dash(external_stylesheets=[
+    #     'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
+    # ])
+    # app.layout = html.Div([
+    #     html.H3("python -m perceptual." + os.path.basename(__file__)[:-3] +
+    #             " " + " ".join(sys.argv[1:])), *graphs
+    # ])
+    # app.run_server(port=8563, debug=False, use_reloader=False)

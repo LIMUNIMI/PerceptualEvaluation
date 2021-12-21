@@ -12,11 +12,7 @@ tools, if the dependencies listed in ``pyproject.toml`` are installed.
 Environment
 -----------
 
-We provide two ways to setup a python environment: using `poetry` and using
-standard `venv`. The following is an example of setup for `venv`.
-`pyproject.toml` file is provided so that you can use `poetry install
---no-root` if you like. The two methods slightly differ in the version of the
-installed packages, though. We used the `poetry` version in the experiments.
+The following is an example of setup for `venv`.
 
 #. ``cd <repo>``
 #. ``git clone <this-repo-url>``
@@ -34,7 +30,7 @@ installed packages, though. We used the `poetry` version in the experiments.
 Then, you'll need ``vienna_corpus``, ``SMD`` and ``Maestro`` datasets from
 ``asmd`` package:
 
-    ``poetry run python -m asmd.install``
+    ``python -m asmd.install``
 
 Chose excerpts
 --------------
@@ -45,23 +41,23 @@ Chose excerpts
 #. Train our proposed model or download the pretrained ones from our mega_:
 
 #. You will need the template matrix provided in this repo. To rebuild it
-   run ``poetry run python -m perceptual.make_template``. You will need
+   run ``python -m perceptual.make_template``. You will need
    the synthesized scale and the corresponding midi in the ``scales``
    and ``audio`` folder. You can download them from our mega_
 
-   #. ``poetry run python -m perceptual.proposed create_mini_specs`` to create
+   #. ``python -m perceptual.proposed create_mini_specs`` to create
       the dataset of mini-specs or download it from our mega_.
 
    #. dataset size: 474.429 notes (831 batches in test, 178 in train))
 
-   #. ``poetry run python -m perceptual.proposed train`` to train our model
+   #. ``python -m perceptual.proposed train`` to train our model
       for velocity estimation and test it. I obtained the following
       absolute error (avg, std) on the test set: 15.11, 10.94 (251 epochs)
 
    #. redo everything with vienna model (use ``--vienna`` for
       ``create_mini_specs`` and ``train``)
 
-#. Run ``poetry run python -m perceptual.excerpt_search``
+#. Run ``python -m perceptual.excerpt_search``
 
 This will analyze ``vienna_corpus`` in search of excerpts, will transcribe the
 original performances and will create a new directory ``audio`` with all
@@ -79,7 +75,7 @@ Chose vsts
 #. Install ``sox`` in your path for post-processing to add reverb or run with
    ``--no-postprocess``
 #. Analyze chosen excerpts:
-   ``poetry run python -m perceptual.chose_vst``
+   ``python -m perceptual.chose_vst``
 
 This will copy the excerpts relative to the chosen vsts to the folder
 ``excerpts``.
@@ -116,15 +112,14 @@ distribute the url to the root of WAET to your partecipants.
 Answer analysis
 ---------------
 
-To plot tests you should use ``perceptual.subjective_eval``, which also prints
-correlations with the objective measure from ``mir_eval``.
+To plot tests you should use ``streamlit run perceptual_app.py -- [options]``,
+which also prints correlations with the objective measure from ``mir_eval``.
 
-The results that we collected are available in our mega_
+The test answers that we collected are available in our mega_
 
-You can see all options by running ``poetry run python -m
-perceptual.subjective_eval``. Before of running you should change the settings
-according to your system: open the script and change the initial global
-variables:
+You can see all options by running ``python perceptual_app.py``. Before of
+running you should change the settings according to your system: open the
+script and change the initial global variables:
 
 #. ``PATH`` is the path to the ``saves`` dir of WAET_
 #. ``DISCARD_BEFORE_THAN`` defines a date before of which the answers whould be
@@ -132,7 +127,7 @@ variables:
 #. ``MAP_VALUES`` defines the mapping for creating the control groups according
    to the answer of the users
 
-Also note that all answers in which users listened to for less than 5 seconds
+Also note that all answers in which the users listened to for less than 5 seconds
 or didn't move the cursor are completely discarded. This is hard-coded in final
 section of the script.
 
@@ -142,11 +137,13 @@ type if ``average`` option is used.  Under each plot, there are the p-values
 computed with Wilcoxon test for each combination of groups or methods. Then the
 error margins and correlations are shown.
 
+Supplementary materials show plots and commands used to generate plots.
+
 Linear regression
 ~~~~~~~~~~~~~~~~~
 
 To compute the linear regressions of the perceptual values, you should run
-``poetry run python perceptual.eval_regression``. It will plot the regression
+``python perceptual.eval_regression``. It will plot the regression
 predictions for various model and weights for the case with and without MFCC
 features. Than, it will also plots the weights with only the selected features.
 
@@ -158,14 +155,14 @@ Alignment
 
 #. Install fluidsynth and download SalamanderGrandPianoV3 soundfont in sf2 format
    from our mega_ folder and put it in your working dir
-#. run ``poetry run python -m perceptual.alignment.dtw_tuning`` to check the
+#. run ``python -m perceptual.alignment.dtw_tuning`` to check the
    FastDTW tuning in midi2midi over ``MusicNet`` solo piano songs
-#. run ``poetry run python -m perceptual.alignment.align amt`` to perform our
+#. run ``python -m perceptual.alignment.align amt`` to perform our
    amt-based alignment over SMD dataset with the best parameters found in the
    previous step
-#. run ``poetry run python -m perceptual.alignment.align ewert`` to perform our
+#. run ``python -m perceptual.alignment.align ewert`` to perform our
    baseline alignment over SMD dataset
-#. run ``poetry run python -m perceptual.alignment.analysis results/ewert.csv
+#. run ``python -m perceptual.alignment.analysis results/ewert.csv
    results/amt.csv`` to plot the results of alignment
 
 
