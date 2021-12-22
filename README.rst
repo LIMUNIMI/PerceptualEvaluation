@@ -112,14 +112,13 @@ distribute the url to the root of WAET to your partecipants.
 Answer analysis
 ---------------
 
-To plot tests you should use ``streamlit run perceptual_app.py -- [options]``,
-which also prints correlations with the objective measure from ``mir_eval``.
+To plot tests you should use ``streamlit run perceptual_app.py``,
+which also prints correlations with the objective measure of your choice.
 
-The test answers that we collected are available in our mega_
+The test answers that we collected are available in the repo.
 
-You can see all options by running ``python perceptual_app.py``. Before of
-running you should change the settings according to your system: open the
-script and change the initial global variables:
+Before of running you should change the settings according to your system:
+open the script and change the initial global variables:
 
 #. ``PATH`` is the path to the ``saves`` dir of WAET_
 #. ``DISCARD_BEFORE_THAN`` defines a date before of which the answers whould be
@@ -134,10 +133,10 @@ section of the script.
 At each run, violin plots are created for each control group and each method.
 One plot is created for each question type and excerpt or for each question
 type if ``average`` option is used.  Under each plot, there are the p-values
-computed with Wilcoxon test for each combination of groups or methods. Then the
-error margins and correlations are shown.
+computed for each combination of groups or methods. The error margins and
+correlations are shown too.
 
-Supplementary materials show plots and commands used to generate plots.
+Supplementary materials show some of the plots that can be generated.
 
 Linear regression
 ~~~~~~~~~~~~~~~~~
