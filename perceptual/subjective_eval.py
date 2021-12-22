@@ -329,13 +329,12 @@ def count_users(db):
     print("\n")
 
 
-def main():
-    import sys
-    if len(sys.argv) < 2:
+def main(args):
+    if len(args) < 2:
         print(f"""
 Syntax:
 
-{sys.argv[0]} variable ['average'] ['ordinal'] ['rescale'] ['our_eval'|'peamt']
+{args[0]} variable ['average'] ['ordinal'] ['rescale'] ['our_eval'|'peamt']
 
 * `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general', 'all'
 
@@ -351,15 +350,15 @@ Syntax:
 """)
         sys.exit()
     else:
-        variable = sys.argv[1]
+        variable = args[1]
         if variable == 'all':
             variable = None
 
-    excerpt_mean = 'average' in sys.argv
+    excerpt_mean = 'average' in args
 
-    ordinal = 'ordinal' in sys.argv
+    ordinal = 'ordinal' in args
 
-    rescale = 'rescale' in sys.argv
+    rescale = 'rescale' in args
 
     # loading data from xml to pandas
     db = xml2sqlite(PATH)
@@ -369,10 +368,10 @@ Syntax:
                        min_listen_time=5,
                        cursor_moved=True,
                        ordinal=ordinal)
-    if 'our_eval' in sys.argv:
+    if 'our_eval' in args:
         obj_eval = excerpts_test(ordinal=ordinal, evaluate=evaluate)
         measure_name = 'Proposed'
-    elif 'peamt' in sys.argv:
+    elif 'peamt' in args:
         peamt = get_peamt()
         obj_eval = excerpts_test(ordinal=ordinal,
                                  evaluate=peamt.evaluate_from_midi)
