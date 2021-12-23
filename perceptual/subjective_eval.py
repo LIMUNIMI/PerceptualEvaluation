@@ -125,7 +125,7 @@ def xml2sqlite(path):
             "user_id"	INTEGER NOT NULL,
             "listen_time"	REAL,
             "cursor_moved"	BOOLEAN,
-            "question"	TEXT,
+            "task"	TEXT,
             "excerpt_num"	INTEGER,
             "method"	TEXT,
             "rating"	REAL,
@@ -153,7 +153,7 @@ CREATE TABLE "ANSWERS" (
     "user_id"	INTEGER NOT NULL,
     "listen_time"	REAL,
     "cursor_moved"	BOOLEAN,
-    "question"	TEXT,
+    "task"	TEXT,
     "excerpt_num"	INTEGER,
     "method"	TEXT,
     "rating"	REAL,
@@ -226,11 +226,11 @@ VALUES (
                     if listen_time is None or cursor_moved is None:
                         continue
 
-                    # inferring question and method
+                    # inferring task and method
                     m = re.match(r"(.*)_(.*)-(.)", answer.get('ref'))
                     if m is None:
                         continue
-                    question = m.group(1)
+                    task = m.group(1)
                     excerpt_num = EXCERPTS[m.group(2)]
                     method = METHODS[m.group(3)]
                     if method == 'ref':
@@ -240,11 +240,11 @@ VALUES (
 
                     db_cursor.execute(f"""
 INSERT INTO "ANSWERS"
-("user_id", "listen_time", "cursor_moved", "question",
+("user_id", "listen_time", "cursor_moved", "task",
 "excerpt_num", "method", "rating")
 VALUES (
 {user_id}, {listen_time}, {cursor_moved},
-"{question}", {excerpt_num}, "{method}", {rating}); """)
+"{task}", {excerpt_num}, "{method}", {rating}); """)
 
     db_cursor.close()
     db.commit()
@@ -267,7 +267,7 @@ def sqlite2pandas(db,
     else:
         SQL = 'SELECT '
 
-    SQL += '"question", "excerpt_num", "method", "rating", "user_id"\
+    SQL += '"task", "excerpt_num", "method", "rating", "user_id"\
         FROM ANSWERS JOIN USERS ON user_id == USERS.id'
 
     need_where = True
@@ -293,11 +293,11 @@ def sqlite2pandas(db,
     data = pd.read_sql(SQL, db)
     if ordinal:
         # changing ratings according to the ordinal value
-        questions = data['question'].unique()
+        tasks = data['task'].unique()
         excerpts = data['excerpt_num'].unique()
         users = data['user_id'].unique()
-        for question in questions:
-            d0 = data.loc[data['question'] == question]
+        for task in tasks:
+            d0 = data.loc[data['task'] == task]
             for excerpt in excerpts:
                 d1 = d0.loc[d0['excerpt_num'] == excerpt]
                 for user in users:
@@ -329,7 +329,7 @@ def count_users(db):
     print("\n")
 
 
-def main(args):
+def main(args, var1='task', var2='method'):
     if len(args) < 2:
         print(f"""
 Syntax:
@@ -338,7 +338,7 @@ Syntax:
 
 * `variable`:  is the controlled variable: one of 'expertise', 'headphones', 'habits_classical', 'habits_general', 'all'
 
-* `average`: if used, all answers from all excerpts are used for each question type; this will results in one plot per question type instead of one plot per (question type, excerpt). Also not that the median and mean values are *averaged* over all the excerpts.
+* `average`: if used, all answers from all excerpts are used for each task type; this will results in one plot per task type instead of one plot per (task type, excerpt). Also not that the median and mean values are *averaged* over all the excerpts.
 
 * `ordinal` : if used, absolute ratings given by users are substituted with their ordinal position (higher is more similar); in this way the pearson coefficient should change, but the pearsman and kendall coefficients shouldn't.
 
@@ -386,5 +386,7 @@ Syntax:
     plot(df,
          obj_eval,
          measure_name,
+         var1,
+         var2,
          variable=variable,
          excerpts_mean=excerpt_mean)

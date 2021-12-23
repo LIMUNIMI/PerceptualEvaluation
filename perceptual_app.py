@@ -33,7 +33,17 @@ if average:
 
 args += sys.argv
 
+order = st.radio(
+    "Chose the variable that is iterated first (external loop) and next (inner loop):",
+    ('1. task, 2. method', '1. method, 2. task'),
+    index=0)
+
+if order == '1. task, 2. method':
+    var1, var2 = 'task', 'method'
+else:
+    var2, var1 = 'task', 'method'
+
 print(f"Using args: {args}")
-subjective_eval.main(args)
+subjective_eval.main(args, var1=var1, var2=var2)
 print("Ended computing!")
 print("This script stays open to leave the server up!")
