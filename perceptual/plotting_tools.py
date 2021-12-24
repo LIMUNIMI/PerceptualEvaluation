@@ -7,6 +7,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from joblib import Parallel, delayed
+import scipy
 from scipy.stats import (f_oneway, kendalltau, kruskal, pearsonr, spearmanr,
                          wilcoxon, ttest_rel, shapiro)
 from statsmodels.stats.multitest import multipletests
@@ -174,16 +175,29 @@ def _plot_data(var2, selected_data, var1_val, excerpt, variable, obj_eval,
 
         # error_margin_text.append(f"var {var}: ")
         error_margins = pd.DataFrame(index=var2_vals,
-                                     columns=['Sample Size', 'Error Margin'])
+                                     columns=[
+                                         'Sample Size',
+                                         'Error Margin Gaussian',
+                                         'Error Margin Bootstrap'
+                                     ])
         for var2_val in var2_vals:
             # computing std, and error margin
             samples = selected_data.loc[selected_data_variable]
             samples = samples.loc[samples[var2] == var2_val]['rating']
             sample_size = samples.count()
             std = samples.std()
+            gauss_err = 1.96 * std / np.sqrt(sample_size)
+
+            bootstrap = [
+                samples.sample(frac=1., replace=True) for _ in range(1000)
+            ]
+            means = np.mean(bootstrap, axis=1)
+            alpha_2 = 0.05 / 2
+            bootstrap_err = (np.quantile(means, q=1 - alpha_2) -
+                             np.quantile(means, q=alpha_2)) / 2
+
             error_margins.loc[var2_val] = [
-                sample_size,
-                np.sqrt((1.96**2) * (std**2) / sample_size)
+                sample_size, gauss_err, bootstrap_err
             ]
         st.write(f"Error margins for control group **{var}**")
         st.write(error_margins)
