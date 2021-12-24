@@ -253,9 +253,30 @@ def _plot_data(var2, selected_data, var1_val, excerpt, variable, obj_eval,
 
     # computing wilcoxon, and t-test test
     st.write("#### Wilcoxon test")
-    _compute_pvals(var2, selected_data, excerpt, variable, wilcoxon)
+    pval1, var2_pval1 = _compute_pvals(var2, selected_data, excerpt, variable,
+                                       wilcoxon)
     st.write("#### t-test (related variables)")
-    _compute_pvals(var2, selected_data, excerpt, variable, ttest_rel)
+    pval2, var2_pval2 = _compute_pvals(var2, selected_data, excerpt, variable,
+                                       ttest_rel)
+
+    if variable:
+        if not np.all((pval1 > 0.05) == (pval2 > 0.05)):
+            st.write(
+                "**Wilcoxon and Student's t tests _differ_ for alpha = 0.05 in variable-wise tests**"
+            )
+        else:
+            st.write(
+                "**Wilcoxon and Student's t tests have _identical_ outcomes for alpha = 0.05 in variable-wise tests**"
+            )
+
+    if not np.all((var2_pval1 > 0.05) == (var2_pval2 > 0.05)):
+        st.write(
+            "**Wilcoxon and Student's t tests _differ_ for alpha = 0.05 in var2-wise tests**"
+        )
+    else:
+        st.write(
+            "**Wilcoxon and Student's t tests have _identical_ outcomes for alpha = 0.05 in var2-wise tests**"
+        )
 
     st.write("---")
 
@@ -298,7 +319,7 @@ def _compute_pvals(var2, selected_data, excerpt, variable, statistics_func):
     var2_vals = selected_data[var2].unique()
     if variable:
         variable_vals = selected_data[variable].unique()
-
+        pvals, var2_pvals = [], []
         # computing pval for each var2_val between the variable values
         for var2_val in var2_vals:
             samples = selected_data.loc[selected_data[var2] == var2_val]
@@ -331,14 +352,22 @@ def _compute_pvals(var2, selected_data, excerpt, variable, statistics_func):
             st.table(
                 pd.DataFrame(pval, columns=variable_vals,
                              index=variable_vals).style.format('{:.2e}'))
+            pvals.append(pval)
 
         # computing pval for each variable
         for var in variable_vals:
             samples = selected_data.loc[selected_data[variable] == var]
-            _pval_on_var2_vals(var2, var2_vals, samples, var, statistics_func)
+            var2_pval = _pval_on_var2_vals(var2, var2_vals, samples, var,
+                                           statistics_func)
+            var2_pvals.append(var2_pval)
+        var2_pval = np.stack(var2_pvals)
+        pval = np.stack(pvals)
     else:
         samples = selected_data
-        _pval_on_var2_vals(var2, var2_vals, samples, 'all', statistics_func)
+        pval = None
+        var2_pval = _pval_on_var2_vals(var2, var2_vals, samples, 'all',
+                                       statistics_func)
+    return pval, var2_pval
 
 
 def _pval_on_var2_vals(var2, var2_vals, samples, var, statistics_func):
@@ -370,3 +399,4 @@ def _pval_on_var2_vals(var2, var2_vals, samples, var, statistics_func):
     st.table(
         pd.DataFrame(pval, columns=var2_vals,
                      index=var2_vals).style.format('{:.2e}'))
+    return pval
