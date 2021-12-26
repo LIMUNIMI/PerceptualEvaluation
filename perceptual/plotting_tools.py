@@ -342,16 +342,22 @@ def _compute_pvals(var2, selected_data, excerpt, variable, statistics_func):
                             )
                             print(e)
                             print()
-            st.write(
-                f"p-values for var2_val **{var2_val}** and variable **{variable}**"
-            )
             if pval.shape[0] > 2:
                 omnibus(distributions)
                 correct_pvalues(pval)
+                st.write(
+                    f"p-values for var2_val **{var2_val}** and variable **{variable}**"
+                )
                 st.write("###### using Bonferroni-Holm correction!")
-            st.table(
-                pd.DataFrame(pval, columns=variable_vals,
-                             index=variable_vals).style.format('{:.2e}'))
+                st.table(
+                    pd.DataFrame(pval,
+                                 columns=variable_vals,
+                                 index=variable_vals).style.format('{:.2e}'))
+            else:
+                st.write(
+                    f"p-values for var2_val **{var2_val}** and variable **{variable}**: {pval[1, 0]:.2e}"
+                )
+
             pvals.append(pval)
 
         # computing pval for each variable
